@@ -537,6 +537,8 @@ app.delete('/progreso/:userId/:itemId', async (req, res) => {
 });
 
 // ── Arrancar servidor ─────────────────────────────────────
+console.log('TURSO_URL:', process.env.TURSO_URL);
+console.log('TOKEN length:', process.env.TURSO_AUTH_TOKEN?.length);
 initDB().then(() => {
     app.listen(PORT, () => {
         console.log(`\n🚀 NEXUS corriendo en http://localhost:${PORT}`);
