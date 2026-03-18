@@ -440,7 +440,11 @@ app.get('/mi-dashboard/:userId', async (req, res) => {
 // ── Dashboard: Agregar item ───────────────────────────────
 app.post('/mi-dashboard', async (req, res) => {
     try {
-        const { userId, itemId } = req.body;
+        const userId = parseInt(req.body.userId);
+        const itemId = parseInt(req.body.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
+            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
+        }
         const hoy = new Date().toISOString().split('T')[0];
         await dbRun(
             `INSERT OR IGNORE INTO dashboard_usuario (usuario_id, item_id, fecha_agregado) VALUES (?, ?, ?)`,
@@ -453,7 +457,11 @@ app.post('/mi-dashboard', async (req, res) => {
 // ── Dashboard: Quitar item ────────────────────────────────
 app.delete('/mi-dashboard/:userId/:itemId', async (req, res) => {
     try {
-        const { userId, itemId } = req.params;
+        const userId = parseInt(req.params.userId);
+        const itemId = parseInt(req.params.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
+            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
+        }
         await dbRun(`DELETE FROM dashboard_usuario WHERE usuario_id = ? AND item_id = ?`, [userId, itemId]);
         res.json({ removed: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -462,7 +470,11 @@ app.delete('/mi-dashboard/:userId/:itemId', async (req, res) => {
 // ── Dashboard: Actualizar item ────────────────────────────
 app.put('/mi-dashboard/:userId/:itemId', async (req, res) => {
     try {
-        const { userId, itemId } = req.params;
+        const userId = parseInt(req.params.userId);
+        const itemId = parseInt(req.params.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
+            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
+        }
         const { fecha_agregado, dlcs_usuario, logros_usuario } = req.body;
         await dbRun(
             `UPDATE dashboard_usuario SET fecha_agregado=?, dlcs_usuario=?, logros_usuario=?
@@ -481,7 +493,8 @@ app.put('/mi-dashboard/:userId/:itemId', async (req, res) => {
 // ── Progreso: GET todos ───────────────────────────────────
 app.get('/progreso/:userId', async (req, res) => {
     try {
-        const { userId } = req.params;
+        const userId = parseInt(req.params.userId);
+        if (Number.isNaN(userId)) return res.status(400).json({ error: 'userId inválido' });
         const rows = await dbAll(`SELECT * FROM usuario_progreso WHERE usuario_id=?`, [userId]);
         const map  = {};
         rows.forEach(r => { map[r.item_id] = r; });
@@ -492,7 +505,9 @@ app.get('/progreso/:userId', async (req, res) => {
 // ── Progreso: GET de un item ──────────────────────────────
 app.get('/progreso/:userId/:itemId', async (req, res) => {
     try {
-        const { userId, itemId } = req.params;
+        const userId = parseInt(req.params.userId);
+        const itemId = parseInt(req.params.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
         const row = await dbGet(`SELECT * FROM usuario_progreso WHERE usuario_id=? AND item_id=?`, [userId, itemId]);
         res.json(row || null);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -501,7 +516,9 @@ app.get('/progreso/:userId/:itemId', async (req, res) => {
 // ── Progreso: PUT (upsert) ────────────────────────────────
 app.put('/progreso/:userId/:itemId', async (req, res) => {
     try {
-        const { userId, itemId } = req.params;
+        const userId = parseInt(req.params.userId);
+        const itemId = parseInt(req.params.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
         const { estado, valoracion, capituloActual, paginaActual, progresoManga, progreso } = req.body;
         await dbRun(
             `INSERT INTO usuario_progreso (usuario_id, item_id, estado, valoracion, capituloActual, paginaActual, progresoManga, progreso)
@@ -530,10 +547,17 @@ app.put('/progreso/:userId/:itemId', async (req, res) => {
 // ── Progreso: DELETE ──────────────────────────────────────
 app.delete('/progreso/:userId/:itemId', async (req, res) => {
     try {
-        const { userId, itemId } = req.params;
+        const userId = parseInt(req.params.userId);
+        const itemId = parseInt(req.params.itemId);
+        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
         await dbRun(`DELETE FROM usuario_progreso WHERE usuario_id=? AND item_id=?`, [userId, itemId]);
         res.json({ deleted: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Rutas no encontradas ──────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
 // ── Arrancar servidor ─────────────────────────────────────
