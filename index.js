@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // En local usa file:local.db (SQLite normal)
 // En producción usa las variables de entorno de Render
 const db = createClient({
-    url:       process.env.TURSO_URL        || 'file:local.db',
+    url:       process.env.TURSO_URL        || 'file:database.db',
     authToken: process.env.TURSO_AUTH_TOKEN || undefined
 });
 
