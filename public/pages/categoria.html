@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Categoria</title>
+     <link rel="stylesheet" href="../css/style.css">
+    </head>
+    <body>
+        <header>
+            <a href="../index.html"><h1 id="titulo-categoria"></h1></a>
+        <nav>
+        <nav>
+            <ul>
+            <li><a href="../index.html">Inicio</a></li>
+            <li><a href="categoria.html?tipo=juegos">Juegos</a></li>
+            <li><a href="categoria.html?tipo=animes">Animes</a></li>
+            <li><a href="categoria.html?tipo=peliculas">Peliculas</a></li>
+            <li><a href="categoria.html?tipo=series">Series</a></li>
+            <li><a href="categoria.html?tipo=comics">Comics</a></li>
+            <li><a href="categoria.html?tipo=libros">Libros</a></li>
+            <li><a href="categoria.html?tipo=mangas">Mangas</a></li>
+            </ul>  
+        </nav>
+    </Header>
+    <main>
+        <section class="formulario">
+            <button id="toggle-form">Agregar nuevo</button>
+            <div id="form-container" class="oculto">
+            <h2>Nuevo elemento</h2>
+            <form id="formulario"></form>
+            </div>
+        </section>
+        <div class="filtros" id="filtros"></div>
+        <section class="lista" id="lista">
+            <!-- Aquí JavaScript va a insertar los juegos -->
+        </section>
+    </main>
+    <div id="modal-edicion" class="modal oculto">
+        <div class="modal-contenido" id="modal-contenido">
+        </div>
+    </div>
+    <div id="modalConfirmacion" class="modal oculto">
+        <div class="modal-contenido">
+            <p>¿Estás seguro de que quieres eliminar este item?</p>
+            <div class="modal-butones">
+            <button id="btnConfirmar">Sí, eliminar</button>
+            <button id="btnCancelar">No, cancelar</button>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script src="../js/config.js"></script>
+    <script src="../js/categoria.js"></script>
+    </body>
+</html>
