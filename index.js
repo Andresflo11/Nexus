@@ -4,12 +4,12 @@
 // ║  Backend Node.js con base de datos Turso (SQLite nube)  ║
 // ╚══════════════════════════════════════════════════════════╝
 
-const express            = require('express');
-const cors               = require('cors');
-const path               = require('path');
-const bcrypt             = require('bcrypt');
-const { createClient }   = require('@libsql/client');
-const SALT_ROUNDS        = 10;
+const express          = require('express');
+const cors             = require('cors');
+const path             = require('path');
+const bcrypt           = require('bcrypt');
+const { createClient } = require('@libsql/client');
+const SALT_ROUNDS      = 10;
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -19,17 +19,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Base de datos Turso ───────────────────────────────────
-// En local usa file:local.db (SQLite normal)
-// En producción usa las variables de entorno de Render
 const db = createClient({
     url:       process.env.TURSO_URL        || 'file:database.db',
     authToken: process.env.TURSO_AUTH_TOKEN || undefined
 });
 
-// ── Helpers async ─────────────────────────────────────────
-async function dbRun(sql, args = []) {
-    return db.execute({ sql, args });
-}
+console.log('TURSO_URL:', process.env.TURSO_URL);
+console.log('TOKEN length:', process.env.TURSO_AUTH_TOKEN?.length);
+
+async function dbRun(sql, args = []) { return db.execute({ sql, args }); }
 async function dbGet(sql, args = []) {
     const r = await db.execute({ sql, args });
     return r.rows[0] ?? null;
@@ -72,8 +70,7 @@ async function initDB() {
         links            TEXT
     )`);
 
-    // Migraciones seguras (Turso ignora si ya existe igual que SQLite)
-    const migraciones = [
+    for (const sql of [
         `ALTER TABLE items ADD COLUMN relacionados     TEXT`,
         `ALTER TABLE items ADD COLUMN saga             TEXT`,
         `ALTER TABLE items ADD COLUMN ordenPublicacion INTEGER`,
@@ -83,10 +80,7 @@ async function initDB() {
         `ALTER TABLE items ADD COLUMN anio             INTEGER`,
         `ALTER TABLE items ADD COLUMN duracion         TEXT`,
         `ALTER TABLE items ADD COLUMN links            TEXT`,
-    ];
-    for (const sql of migraciones) {
-        try { await dbRun(sql); } catch (_) {}
-    }
+    ]) { try { await dbRun(sql); } catch (_) {} }
 
     await dbRun(`CREATE TABLE IF NOT EXISTS usuarios (
         id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +89,6 @@ async function initDB() {
         rol      TEXT    NOT NULL DEFAULT 'user'
     )`);
 
-    // Crear admin por defecto si no existe
     const adminExiste = await dbGet(`SELECT id FROM usuarios WHERE username = 'admin'`);
     if (!adminExiste) {
         const hash = await bcrypt.hash('admin123', SALT_ROUNDS);
@@ -114,14 +107,11 @@ async function initDB() {
         FOREIGN KEY(item_id)    REFERENCES items(id)
     )`);
 
-    const migDashboard = [
+    for (const sql of [
         `ALTER TABLE dashboard_usuario ADD COLUMN fecha_agregado TEXT`,
         `ALTER TABLE dashboard_usuario ADD COLUMN dlcs_usuario   TEXT`,
         `ALTER TABLE dashboard_usuario ADD COLUMN logros_usuario TEXT`,
-    ];
-    for (const sql of migDashboard) {
-        try { await dbRun(sql); } catch (_) {}
-    }
+    ]) { try { await dbRun(sql); } catch (_) {} }
 
     await dbRun(`CREATE TABLE IF NOT EXISTS usuario_progreso (
         id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,7 +131,7 @@ async function initDB() {
     // Migrar contraseñas planas a bcrypt si las hubiera
     const usuarios = await dbAll(`SELECT id, password FROM usuarios`);
     for (const u of usuarios) {
-        if (!u.password.startsWith('$2b$')) {
+        if (u.password && !u.password.startsWith('$2b$')) {
             const hash = await bcrypt.hash(u.password, SALT_ROUNDS);
             await dbRun(`UPDATE usuarios SET password = ? WHERE id = ?`, [hash, u.id]);
         }
@@ -155,7 +145,6 @@ function parseJSON(str) {
     try { return str ? JSON.parse(str) : null; }
     catch { return null; }
 }
-
 function parsearFila(row) {
     if (!row) return null;
     return {
@@ -180,6 +169,18 @@ app.get('/categoria', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'pages', 'categoria.html'));
 });
 
+// ── API: GET items por lista de IDs (relacionados) ────────
+// ⚠️ Esta ruta va ANTES de /items/:tipo para que no la capture
+app.get('/items/bulk/:ids', async (req, res) => {
+    try {
+        const ids = req.params.ids.split(',').map(Number).filter(Boolean);
+        if (!ids.length) return res.json([]);
+        const ph   = ids.map(() => '?').join(',');
+        const rows = await dbAll(`SELECT * FROM items WHERE id IN (${ph})`, ids);
+        res.json(rows.map(parsearFila));
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── API: GET todos los items ──────────────────────────────
 app.get('/items', async (req, res) => {
     try {
@@ -187,17 +188,6 @@ app.get('/items', async (req, res) => {
         const rows = search
             ? await dbAll(`SELECT * FROM items WHERE titulo LIKE ? ORDER BY id DESC`, [`%${search}%`])
             : await dbAll(`SELECT * FROM items ORDER BY id DESC`);
-        res.json(rows.map(parsearFila));
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ── API: GET items por lista de IDs ──────────────────────
-app.get('/items/bulk/:ids', async (req, res) => {
-    try {
-        const ids = req.params.ids.split(',').map(Number).filter(Boolean);
-        if (!ids.length) return res.json([]);
-        const ph   = ids.map(() => '?').join(',');
-        const rows = await dbAll(`SELECT * FROM items WHERE id IN (${ph})`, ids);
         res.json(rows.map(parsearFila));
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -213,7 +203,7 @@ app.get('/items/id/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── API: GET items por tipo ───────────────────────────────
+// ── API: GET items de una categoría ──────────────────────
 app.get('/items/:tipo', async (req, res) => {
     try {
         const { tipo } = req.params;
@@ -223,7 +213,7 @@ app.get('/items/:tipo', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── API: POST — añadir item ───────────────────────────────
+// ── API: POST — añadir item nuevo ─────────────────────────
 app.post('/items', async (req, res) => {
     try {
         const {
@@ -272,16 +262,16 @@ app.post('/items', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── API: PUT — actualizar item ────────────────────────────
+// ── API: PUT — actualizar item existente ──────────────────
 app.put('/items/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const item   = { ...req.body };
 
-        if (item.temporadas  !== undefined) item.temporadas  = JSON.stringify(item.temporadas);
-        if (item.progreso    !== undefined) item.progreso    = JSON.stringify(item.progreso);
-        if (item.dlcs        !== undefined) item.dlcs        = JSON.stringify(item.dlcs);
-        if (item.tomos       !== undefined) item.tomos       = JSON.stringify(item.tomos);
+        if (item.temporadas    !== undefined) item.temporadas    = JSON.stringify(item.temporadas);
+        if (item.progreso      !== undefined) item.progreso      = JSON.stringify(item.progreso);
+        if (item.dlcs          !== undefined) item.dlcs          = JSON.stringify(item.dlcs);
+        if (item.tomos         !== undefined) item.tomos         = JSON.stringify(item.tomos);
         if (item.progresoManga !== undefined) item.progresoManga = JSON.stringify(item.progresoManga);
         if (item.relacionados  !== undefined) item.relacionados  = JSON.stringify(item.relacionados);
         if (item.generos       !== undefined) item.generos       = JSON.stringify(item.generos);
@@ -296,7 +286,7 @@ app.put('/items/:id', async (req, res) => {
         const setStr = columnas.map(c => `${c} = ?`).join(', ');
         const result = await dbRun(`UPDATE items SET ${setStr} WHERE id = ?`, [...valores, id]);
         res.json({ updated: true, changes: Number(result.rowsAffected) });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
 // ── API: DELETE — borrar item ─────────────────────────────
@@ -354,9 +344,7 @@ app.post('/auth/register', async (req, res) => {
             [username, hash]
         );
         res.json({ id: Number(result.lastInsertRowid), username, rol: 'user' });
-    } catch (err) {
-        res.status(409).json({ error: 'El usuario ya existe' });
-    }
+    } catch (err) { res.status(409).json({ error: 'El usuario ya existe' }); }
 });
 
 // ── AUTH: Login ───────────────────────────────────────────
@@ -377,20 +365,16 @@ app.put('/auth/cuenta/:id', async (req, res) => {
         const id = parseInt(req.params.id);
         const { username, passwordActual, passwordNueva } = req.body;
         if (!username) return res.status(400).json({ error: 'El nombre no puede estar vacío' });
-
         const row = await dbGet(`SELECT * FROM usuarios WHERE id = ?`, [id]);
         if (!row) return res.status(404).json({ error: 'Usuario no encontrado' });
-
         const otro = await dbGet(`SELECT id FROM usuarios WHERE username = ? AND id != ?`, [username, id]);
         if (otro) return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso' });
-
         let nuevaPass = row.password;
         if (passwordNueva) {
             const match = await bcrypt.compare(passwordActual, row.password);
             if (!match) return res.status(401).json({ error: 'La contraseña actual no es correcta' });
             nuevaPass = await bcrypt.hash(passwordNueva, SALT_ROUNDS);
         }
-
         await dbRun(`UPDATE usuarios SET username = ?, password = ? WHERE id = ?`, [username, nuevaPass, id]);
         res.json({ updated: true, username });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -399,17 +383,14 @@ app.put('/auth/cuenta/:id', async (req, res) => {
 // ── AUTH: Eliminar cuenta ─────────────────────────────────
 app.delete('/auth/cuenta/:id', async (req, res) => {
     try {
-        const id       = parseInt(req.params.id);
+        const id           = parseInt(req.params.id);
         const { password } = req.body;
         if (!password) return res.status(400).json({ error: 'Contraseña requerida' });
-
         const row = await dbGet(`SELECT * FROM usuarios WHERE id = ?`, [id]);
         if (!row) return res.status(404).json({ error: 'Usuario no encontrado' });
         if (row.rol === 'admin') return res.status(403).json({ error: 'Los admins no pueden borrar su cuenta desde aquí' });
-
         const match = await bcrypt.compare(password, row.password);
         if (!match) return res.status(401).json({ error: 'Contraseña incorrecta' });
-
         await dbRun(`DELETE FROM usuarios WHERE id = ?`, [id]);
         await dbRun(`DELETE FROM dashboard_usuario WHERE usuario_id = ?`, [id]);
         await dbRun(`DELETE FROM usuario_progreso WHERE usuario_id = ?`, [id]);
@@ -417,7 +398,7 @@ app.delete('/auth/cuenta/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Dashboard: GET items del usuario ─────────────────────
+// ── Dashboard usuario: GET sus items ─────────────────────
 app.get('/mi-dashboard/:userId', async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
@@ -431,20 +412,16 @@ app.get('/mi-dashboard/:userId', async (req, res) => {
         );
         res.json(rows.map(r => ({
             ...parsearFila(r),
-            dlcs_usuario:   r.dlcs_usuario   ? JSON.parse(r.dlcs_usuario) : null,
-            logros_usuario: r.logros_usuario  ?? null
+            dlcs_usuario:   r.dlcs_usuario  ? JSON.parse(r.dlcs_usuario) : null,
+            logros_usuario: r.logros_usuario ?? null
         })));
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Dashboard: Agregar item ───────────────────────────────
+// ── Dashboard usuario: Agregar item ──────────────────────
 app.post('/mi-dashboard', async (req, res) => {
     try {
-        const userId = parseInt(req.body.userId);
-        const itemId = parseInt(req.body.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
-            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
-        }
+        const { userId, itemId } = req.body;
         const hoy = new Date().toISOString().split('T')[0];
         await dbRun(
             `INSERT OR IGNORE INTO dashboard_usuario (usuario_id, item_id, fecha_agregado) VALUES (?, ?, ?)`,
@@ -454,27 +431,19 @@ app.post('/mi-dashboard', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Dashboard: Quitar item ────────────────────────────────
+// ── Dashboard usuario: Quitar item ───────────────────────
 app.delete('/mi-dashboard/:userId/:itemId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
-        const itemId = parseInt(req.params.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
-            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
-        }
+        const { userId, itemId } = req.params;
         await dbRun(`DELETE FROM dashboard_usuario WHERE usuario_id = ? AND item_id = ?`, [userId, itemId]);
         res.json({ removed: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Dashboard: Actualizar item ────────────────────────────
+// ── Dashboard usuario: Actualizar item ───────────────────
 app.put('/mi-dashboard/:userId/:itemId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
-        const itemId = parseInt(req.params.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) {
-            return res.status(400).json({ error: 'userId e itemId deben ser números válidos' });
-        }
+        const { userId, itemId } = req.params;
         const { fecha_agregado, dlcs_usuario, logros_usuario } = req.body;
         await dbRun(
             `UPDATE dashboard_usuario SET fecha_agregado=?, dlcs_usuario=?, logros_usuario=?
@@ -490,11 +459,19 @@ app.put('/mi-dashboard/:userId/:itemId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Progreso: GET todos ───────────────────────────────────
+// ── Dashboard usuario: Quitar item de progreso ───────────
+app.delete('/progreso/:userId/:itemId', async (req, res) => {
+    try {
+        const { userId, itemId } = req.params;
+        await dbRun(`DELETE FROM usuario_progreso WHERE usuario_id=? AND item_id=?`, [userId, itemId]);
+        res.json({ deleted: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── API: GET progreso de usuario en todos sus items ───────
 app.get('/progreso/:userId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
-        if (Number.isNaN(userId)) return res.status(400).json({ error: 'userId inválido' });
+        const { userId } = req.params;
         const rows = await dbAll(`SELECT * FROM usuario_progreso WHERE usuario_id=?`, [userId]);
         const map  = {};
         rows.forEach(r => { map[r.item_id] = r; });
@@ -502,23 +479,19 @@ app.get('/progreso/:userId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Progreso: GET de un item ──────────────────────────────
+// ── API: GET progreso de usuario en un item ───────────────
 app.get('/progreso/:userId/:itemId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
-        const itemId = parseInt(req.params.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
+        const { userId, itemId } = req.params;
         const row = await dbGet(`SELECT * FROM usuario_progreso WHERE usuario_id=? AND item_id=?`, [userId, itemId]);
         res.json(row || null);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Progreso: PUT (upsert) ────────────────────────────────
+// ── API: PUT progreso de usuario en un item ───────────────
 app.put('/progreso/:userId/:itemId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
-        const itemId = parseInt(req.params.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
+        const { userId, itemId } = req.params;
         const { estado, valoracion, capituloActual, paginaActual, progresoManga, progreso } = req.body;
         await dbRun(
             `INSERT INTO usuario_progreso (usuario_id, item_id, estado, valoracion, capituloActual, paginaActual, progresoManga, progreso)
@@ -544,25 +517,7 @@ app.put('/progreso/:userId/:itemId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Progreso: DELETE ──────────────────────────────────────
-app.delete('/progreso/:userId/:itemId', async (req, res) => {
-    try {
-        const userId = parseInt(req.params.userId);
-        const itemId = parseInt(req.params.itemId);
-        if (Number.isNaN(userId) || Number.isNaN(itemId)) return res.status(400).json({ error: 'userId/itemId inválidos' });
-        await dbRun(`DELETE FROM usuario_progreso WHERE usuario_id=? AND item_id=?`, [userId, itemId]);
-        res.json({ deleted: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ── Rutas no encontradas ──────────────────────────────────
-app.use((req, res) => {
-    res.status(404).json({ error: 'Ruta no encontrada' });
-});
-
 // ── Arrancar servidor ─────────────────────────────────────
-console.log('TURSO_URL:', process.env.TURSO_URL);
-console.log('TOKEN length:', process.env.TURSO_AUTH_TOKEN?.length);
 initDB().then(() => {
     app.listen(PORT, () => {
         console.log(`\n🚀 NEXUS corriendo en http://localhost:${PORT}`);
