@@ -1,0 +1,415 @@
+/*
+ * ╔══════════════════════════════════════════════════════╗
+ * ║  cards.css — CARDS DE MEDIA Y LISTA                 ║
+ * ╠══════════════════════════════════════════════════════╣
+ * ║  Estilos de las cards del grid, la vista de lista,  ║
+ * ║  las barras de progreso y los botones +/− de         ║
+ * ║  capítulos/episodios/páginas.                        ║
+ * ║                                                      ║
+ * ║  Para cambiar el tamaño mínimo de las cards:         ║
+ * ║    .media-grid → minmax(150px, 1fr)                 ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
+
+/* ── Grid de cards ──────────────────────────────────────
+ * El grid que contiene todas las cards.
+ * minmax(150px, 1fr) = mínimo 150px, máximo lo que quepa.
+ */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.9rem;
+}
+
+/* ── Card individual ────────────────────────────────────
+ * Cada card de película, juego, anime, etc.
+ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  animation: fadeUp 0.35s ease both;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Póster de la card (imagen o emoji) ─────────────────
+ * El área de imagen. Relación 2:3 como portada de libro/película.
+ * Para cambiar la proporción: aspect-ratio: 2/3
+ */
+.card-poster {
+  aspect-ratio: 2/3;
+  background: var(--surface2);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.card:hover .card-poster img { transform: scale(1.05); }
+
+.card-poster-placeholder {
+  font-size: 3rem;
+  opacity: 0.25;
+}
+
+/* Badge de valoración (esquina superior derecha del póster) */
+.card-rating-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+}
+
+/* Barra de color en la parte inferior del póster */
+.card-estado-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+/* ── Info de la card (debajo del póster) ────────────────
+ * Título, estado, plataforma, logros, progreso.
+ * flex + margin-top: auto en .card-bottom empuja
+ * los botones al fondo de la card.
+ */
+.card-info {
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 0.3rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Estado y plataforma como tags */
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+/* ── Tags de estado, plataforma y logros ────────────────
+ * Las etiquetas pequeñas dentro de la card.
+ * Puedes cambiar los colores de fondo/borde de cada tipo.
+ */
+.card-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    padding: 0.18rem 0.45rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    width: fit-content;
+    letter-spacing: 0.02em;
+}
+
+/* Tag de estado (Viendo, Completado, etc.) — fondo blanco sutil */
+.tag-estado {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+/* Tag de plataforma (Steam, Netflix, etc.) — amarillo acento */
+.tag-plataforma {
+  background: rgba(232, 255, 71, 0.06);
+  border: 1px solid rgba(232, 255, 71, 0.15);
+  color: var(--accent);
+}
+
+/* Tag de fecha — gris discreto */
+.tag-fecha {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* Tag de estado de la serie (En emisión, Finalizada...) — naranja */
+.tag-serie {
+  background: rgba(255, 107, 53, 0.08);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  color: #ff6b35;
+}
+
+/* Tag de logros completados — verde */
+.tag-logros-si {
+  background: rgba(100, 221, 23, 0.08);
+  border: 1px solid rgba(100, 221, 23, 0.25);
+  color: #64dd17;
+}
+
+/* Tag de logros pendientes — gris */
+.tag-logros-no {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #9ca3af;
+}
+
+/* ── Parte inferior de la card ──────────────────────────
+ * Contiene el progreso y los botones de acción.
+ * margin-top: auto lo empuja al fondo de la card.
+ */
+.card-bottom {
+  margin-top: auto;
+}
+
+/* Botones Editar / Eliminar */
+.card-actions {
+  display: flex;
+  gap: 4px;
+  padding: 0;
+  margin-top: 0.5rem;
+}
+
+.card-btn {
+  flex: 1;
+  padding: 0.3rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.card-btn:hover       { background: var(--surface2); color: var(--text); }
+.card-btn.danger:hover { border-color: rgba(239, 68, 68, 0.4); color: #ef4444; }
+
+/* ── Vista de lista (alternativa al grid) ───────────────
+ * La vista donde cada elemento ocupa una fila horizontal.
+ */
+.media-list { display: flex; flex-direction: column; gap: 2px; }
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.15s;
+  animation: fadeUp 0.3s ease both;
+}
+
+.list-item:hover { border-color: var(--border2); background: var(--surface2); }
+
+/* Miniatura en la vista lista */
+.list-thumb {
+  width: 34px;
+  height: 50px;
+  background: var(--surface2);
+  border-radius: 5px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.list-title  { font-size: 0.875rem; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-estado { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.list-fecha  { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+
+.list-rating {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.list-actions { display: flex; gap: 4px; }
+
+/* ── Barra de progreso ──────────────────────────────────
+ * La barra que muestra % de episodios/capítulos/páginas.
+ * height: 4px → grosor de la barra
+ */
+.progress-wrap {
+  margin-top: 0.4rem;
+  background: var(--surface2);
+  border-radius: 99px;
+  height: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  width: var(--pct, 0%);
+  transition: none;
+  will-change: width;
+  transform: translateZ(0);
+}
+
+/* Texto encima de la barra (Cap 5 / 12) */
+.progress-info {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+  min-height: 1rem;
+}
+
+/* ── Botones +/− de progreso en cards ───────────────────
+ * Los botones para subir/bajar capítulos en la card.
+ */
+.progress-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+/* Botón redondo de + y − */
+.prog-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.prog-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+/* Número actual entre los botones */
+.prog-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+  flex: 1;
+  text-align: center;
+  min-width: 2.5rem;
+  will-change: contents;
+}
+
+/* ── Separador por año ──────────────────────────────────
+ * Cuando ordenas por año aparece una línea separadora
+ * con el año en grande entre grupos de cards.
+ */
+.año-grupo {
+  margin-bottom: 2rem;
+}
+
+.año-separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* El año en grande (ej: 2023) */
+.año-label {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.4rem;   /* ← tamaño del año */
+  letter-spacing: 3px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Las líneas a los lados del año */
+.año-linea {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* El contador de elementos del año */
+.año-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.tag-logros-algunos {
+    background: rgba(232, 255, 71, 0.07);
+    border: 1px solid rgba(232, 255, 71, 0.2);
+    color: var(--accent);
+}
+.tag-logros-proceso {
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.25);
+    color: #ff6b35;
+}
+.tag-logros-ninguno {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #6b7280;
+}
+
+.tag-estado-serie {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+/* ── Responsive cards ───────────────────────────────────
+ * En móvil las cards son un poco más pequeñas.
+ */
+@media (max-width: 480px) {
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.65rem;
+  }
+}

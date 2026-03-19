@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXUS — Categoría</title>
 <link rel="stylesheet" href="/css/main.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
 </head>
 <body>
 
@@ -65,6 +66,8 @@
       <option value="rating-desc">Mayor rating</option>
       <option value="rating-asc">Menor rating</option>
       <option value="titulo">A – Z</option>
+      <option value="año-desc">Año ↓ (nuevo→viejo)</option>   <!-- ← nuevo -->
+      <option value="año-asc">Año ↑ (viejo→nuevo)</option> 
     </select>
 
     <div class="section-label" style="margin-top:1.5rem">Vista</div>
@@ -103,20 +106,103 @@
     </div>
   </div>
 </div>
+<!-- Modal expandido de card -->
+<div class="modal-overlay oculto" id="modal-expandido">
+  <div class="modal-expandido-inner">
 
-<!-- Modal edición -->
-<div class="modal-overlay oculto" id="modal-edicion">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header">
-      <span class="modal-title">EDITAR ELEMENTO</span>
-      <button class="close-btn" onclick="cerrarModalEdicion()">✕</button>
+    <!-- Fondo con imagen blur -->
+    <div class="me-bg" id="me-bg"></div>
+
+    <!-- Contenido -->
+    <div class="me-layout">
+
+      <!-- Columna izquierda: póster + acciones rápidas -->
+      <div class="me-sidebar">
+        <div class="me-poster" id="me-poster"></div>
+
+        <div class="me-acciones">
+          <select id="me-estado" onchange="meGuardarCampo('estado', this.value)"></select>
+          <select id="me-valoracion" onchange="meGuardarCampo('valoracion', parseInt(this.value))">
+            <option value="5">Me Encanta</option>
+            <option value="4">Me gustó</option>
+            <option value="3">Indiferente</option>
+            <option value="2">No me gustó</option>
+            <option value="1">Pésimo</option>
+            <option value="0">Sin valorar</option>
+          </select>
+          <button class="me-btn-completar" id="me-btn-completar" onclick="meCompletarRapido()"></button>
+        </div>
+      </div>
+
+      <!-- Columna derecha: info -->
+      <div class="me-contenido">
+        <button class="close-btn" style="margin-left:auto;display:flex" onclick="cerrarModalExpandido()">✕</button>
+
+        <h2 class="me-titulo" id="me-titulo"></h2>
+
+        <div class="me-meta" id="me-meta"></div>
+        <div id="me-dlcs" class="oculto" style="margin-bottom:1.25rem"></div>
+
+        <!-- Progreso episodios (series/animes) -->
+        <div id="me-episodios" class="oculto">
+          <div class="me-progreso-header">
+            <span id="me-progreso-texto"></span>
+            <div class="progress-btns">
+              <button class="prog-btn" onclick="mecambiarEpisodio(-1)">−</button>
+              <span class="prog-num" id="me-ep-num"></span>
+              <button class="prog-btn" onclick="mecambiarEpisodio(1)">+</button>
+            </div>
+          </div>
+          <div class="progress-wrap" style="margin-bottom:1.25rem">
+            <div class="progress-fill" id="me-barra-ep" style="width:0%;will-change:width;transform:translateZ(0)"></div>
+          </div>
+
+          <!-- Tabs de temporadas -->
+          <div class="me-tabs" id="me-tabs"></div>
+          <div class="me-tab-contenido" id="me-tab-contenido"></div>
+        </div>
+         <div id="me-tomos" class="oculto"></div>
+        <!-- Progreso capítulos (comics/mangas) -->
+        <div id="me-capitulos" class="oculto">
+          <div class="me-progreso-header">
+            <span id="me-cap-texto"></span>
+            <div class="progress-btns">
+              <button class="prog-btn" onclick="mecambiarCapitulo(-1)">−</button>
+              <span class="prog-num" id="me-cap-num"></span>
+              <button class="prog-btn" onclick="mecambiarCapitulo(1)">+</button>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-fill" id="me-barra-cap" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Progreso páginas (libros) -->
+        <div id="me-paginas" class="oculto">
+          <div class="me-progreso-header">
+            <span id="me-pag-texto"></span>
+            <div class="progress-btns">
+              <button class="prog-btn" onclick="mecambiarPagina(-1)">−</button>
+              <span class="prog-num" id="me-pag-num"></span>
+              <button class="prog-btn" onclick="mecambiarPagina(1)">+</button>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-fill" id="me-barra-pag" style="width:0%"></div>
+          </div>
+        </div>
+
+        <button class="me-btn-editar" onclick="meAbrirEdicion()">✏ Editar todos los campos</button>
+      </div>
     </div>
-    <div id="modal-contenido" class="form-grid"></div>
   </div>
 </div>
-
+<script src="/js/datePicker.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/busquedaGlobal.js"></script>
-<script src="/js/categoria.js"></script>
+<script src="/js/cat-core.js"></script>
+<script src="/js/cat-render.js"></script>
+<script src="/js/cat-forms.js"></script>
+<script src="/js/cat-modal.js"></script>
 </body>
 </html>

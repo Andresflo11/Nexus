@@ -1,0 +1,310 @@
+/*
+ * ╔══════════════════════════════════════════════════════╗
+ * ║  modal-expandido.css — MODAL DE DETALLE DE CARD     ║
+ * ╠══════════════════════════════════════════════════════╣
+ * ║  El modal grande que aparece al hacer click en       ║
+ * ║  el póster de una card. Tiene dos columnas:          ║
+ * ║  · Izquierda: póster + selector de estado/rating     ║
+ * ║  · Derecha: título, tags, progreso, temporadas       ║
+ * ║                                                      ║
+ * ║  Para cambiar el tamaño máximo del modal:            ║
+ * ║    .modal-expandido-inner → max-width: 860px         ║
+ * ║  Para cambiar el ancho de la columna del póster:     ║
+ * ║    .me-layout → grid-template-columns: 200px 1fr    ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
+
+/* ── Overlay del modal ──────────────────────────────────
+ * El fondo oscuro detrás del modal.
+ * Empieza invisible y aparece con la clase me-visible.
+ */
+#modal-expandido {
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s;
+}
+
+#modal-expandido.me-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Contenedor interior del modal ──────────────────────
+ * El cuadro redondeado con el contenido.
+ * Empieza ligeramente reducido y crece al aparecer.
+ */
+.modal-expandido-inner {
+  position: relative;
+  width: 100%;
+  max-width: 860px;   /* ← ancho máximo del modal */
+  max-height: 90vh;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  transform: scale(0.96);
+  transition: transform 0.25s, opacity 0.2s;
+  background: var(--surface);
+}
+
+#modal-expandido.me-visible .modal-expandido-inner {
+  transform: scale(1);
+}
+
+/* ── Fondo con imagen blur ──────────────────────────────
+ * La imagen del póster se muestra desenfocada y oscura
+ * como fondo del modal.
+ * filter: blur(28px) → desenfoque | brightness(0.25) → oscuridad
+ */
+.me-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) brightness(0.25) saturate(1.4);
+  transform: scale(1.1);
+  transition: opacity 0.3s;
+  z-index: 0;
+}
+
+/* ── Layout de dos columnas ─────────────────────────────
+ * 200px para el póster | resto para el contenido
+ */
+.me-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr;  /* ← ancho columna póster */
+  gap: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ── Columna izquierda: póster + acciones ───────────────*/
+.me-sidebar {
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-right: 1px solid var(--border);
+}
+
+/* Imagen del póster */
+.me-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  font-size: 3rem;
+}
+
+.me-poster img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Zona de selects y botón completar */
+.me-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.me-acciones select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.me-acciones select option { background: var(--surface); }
+
+/* Botón "Marcar como completado" */
+.me-btn-completar {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* Botón "Editar todos los campos" */
+.me-btn-editar {
+  margin-top: 1.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.me-btn-editar:hover { color: var(--text); border-color: var(--text); }
+
+/* ── Columna derecha: información ───────────────────────*/
+.me-contenido {
+  padding: 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Título del elemento */
+.me-titulo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2.2rem;   /* ← tamaño del título */
+  letter-spacing: 2px;
+  line-height: 1;
+  margin: 0.5rem 0 0.75rem;
+}
+
+/* Zona de tags (fecha, plataforma, estado...) */
+.me-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Tag base del modal expandido */
+.me-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+/* Tags con colores específicos */
+.me-tag-fecha      { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--muted); }
+.me-tag-plataforma { background: rgba(232,255,71,0.07);  border-color: rgba(232,255,71,0.2); color: var(--accent); font-weight: 500; }
+.me-tag-estado     { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: var(--text); }
+.me-tag-serie { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2); color: #94a3b8; }
+.me-tag-logros-todos    { background: rgba(100,221,23,0.08);  border: 1px solid rgba(100,221,23,0.25);  color: #64dd17; }
+.me-tag-logros-algunos  { background: rgba(232,255,71,0.07);  border: 1px solid rgba(232,255,71,0.2);   color: var(--accent); }
+.me-tag-logros-proceso  { background: rgba(255,107,53,0.08);  border: 1px solid rgba(255,107,53,0.25);  color: #ff6b35; }
+.me-tag-logros-sin      { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #9ca3af; }
+.me-tag-logros-ninguno  { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);  color: #6b7280; }
+
+/* ── Sección de progreso ────────────────────────────────
+ * La cabecera con el texto de progreso y los botones +/−.
+ */
+.me-progreso-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.me-progreso-header span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Tabs de temporadas ─────────────────────────────────
+ * Los botones T1, T2, T3... para cambiar de temporada.
+ */
+.me-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.me-tab {
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.me-tab:hover  { border-color: var(--border2); color: var(--text); }
+.me-tab.active { font-weight: 600; }
+
+/* Contenido de la temporada activa (barra + grid de eps) */
+.me-temp-info { animation: fadeUp 0.2s ease both; }
+
+.me-temp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Grid de episodios vistos ───────────────────────────
+ * Los cuadraditos que representan cada episodio.
+ * .visto  → episodio visto (color del acento)
+ * .actual → episodio actual (relleno sólido)
+ */
+.me-caps-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.me-cap-dot {
+  width: 28px;      /* ← tamaño de cada cuadradito */
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  transition: all 0.1s;
+}
+
+.prog-btn {
+    color: #6b7280;
+    transition: all 0.15s;
+}
+
+.prog-btn:hover {
+    color: #fff;
+}
+
+.me-cap-dot.visto  { color: var(--text); }
+.me-cap-dot.actual { color: #000 !important; font-weight: 700; }
+
+/* ── Responsive del modal expandido ────────────────────
+ * En móvil el modal pasa a una sola columna.
+ */
+@media (max-width: 640px) {
+  .me-layout          { grid-template-columns: 1fr; }
+  .me-sidebar         { flex-direction: row; align-items: flex-start; padding: 1.25rem; }
+  .me-poster          { width: 90px; flex-shrink: 0; }
+  .me-acciones        { flex: 1; }
+  .me-titulo          { font-size: 1.6rem; }
+}

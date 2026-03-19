@@ -1,0 +1,59 @@
+/*
+ * ╔══════════════════════════════════════════════════════╗
+ * ║  variables.css — COLORES Y FUENTES DE NEXUS          ║
+ * ╠══════════════════════════════════════════════════════╣
+ * ║  Aquí están TODOS los colores de la app.             ║
+ * ║  Si quieres cambiar un color, cámbialo aquí          ║
+ * ║  y se actualiza en toda la aplicación.               ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+
+  /* ── Fondos (de más oscuro a más claro) ─────────────────
+   * --bg       → fondo principal de la página
+   * --surface  → fondo de cards y paneles
+   * --surface2 → fondo de elementos dentro de cards
+   * --surface3 → fondo de elementos más internos
+   */
+  --bg:       #080a0f;
+  --surface:  #0e1117;
+  --surface2: #141720;
+  --surface3: #1b2030;
+
+  /* ── Bordes ─────────────────────────────────────────────
+   * --border  → borde sutil (casi invisible)
+   * --border2 → borde más visible (hover, focus)
+   */
+  --border:   rgba(255, 255, 255, 0.07);
+  --border2:  rgba(255, 255, 255, 0.12);
+
+  /* ── Colores principales ────────────────────────────────
+   * --accent  → amarillo neón (botones, highlights)
+   * --accent2 → naranja (detalles secundarios)
+   */
+  --accent:   #e8ff47;
+  --accent2:  #ff6b35;
+
+  /* ── Textos ─────────────────────────────────────────────
+   * --text  → texto principal (blanco suave)
+   * --muted → texto secundario (gris)
+   */
+  --text:     #f0f2f7;
+  --muted:    #6b7280;
+
+  /* ── Colores por categoría ──────────────────────────────
+   * Cada categoría tiene su color propio.
+   * Se usan en la barra de estado de las cards
+   * y en los puntos del sidebar.
+   */
+  --color-juegos:    #7c5cfc;  /* Morado */
+  --color-peliculas: #ed1c24;  /* Rojo */
+  --color-series:    #00c030;  /* Verde */
+  --color-animes:    #2e51a2;  /* Azul */
+  --color-mangas:    #e91e63;  /* Rosa */
+  --color-comics:    #ff6b35;  /* Naranja */
+  --color-libros:    #c8a85e;  /* Dorado */
+}

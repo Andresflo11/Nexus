@@ -1,0 +1,217 @@
+/*
+ * ╔══════════════════════════════════════════════════════╗
+ * ║  layout.css — ESTRUCTURA DE LA PÁGINA               ║
+ * ╠══════════════════════════════════════════════════════╣
+ * ║  Controla la barra superior (header), el menú       ║
+ * ║  lateral (sidebar) y el área de contenido (main).   ║
+ * ║                                                      ║
+ * ║  Para cambiar el ancho del sidebar:                  ║
+ * ║    .layout → grid-template-columns: 240px 1fr       ║
+ * ║    aside   → position sticky / height               ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
+
+/* ── Barra superior ─────────────────────────────────────
+ * La barra que se queda fija arriba al hacer scroll.
+ * Contiene el logo, estadísticas y botón de añadir.
+ */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8, 10, 15, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  height: 64px;  /* ← cambia esto para hacer el header más alto/bajo */
+}
+
+/* Logo NEXUS */
+.logo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.8rem;    /* ← tamaño del logo */
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--accent) 0%, #fff 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+
+.logo span { -webkit-text-fill-color: var(--accent); }
+
+/* Estadísticas del header (total, categorías, rating) */
+.header-stats {
+  display: flex;
+  gap: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.header-stat strong {
+  color: var(--accent);
+  font-size: 1rem;
+  display: block;
+  letter-spacing: 0;
+}
+
+/* Zona derecha del header (buscador + botón añadir) */
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Layout principal (sidebar + contenido) ─────────────
+ * Dos columnas: sidebar fijo a la izquierda, contenido a la derecha.
+ * Para cambiar el ancho del sidebar cambia "240px".
+ */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;  /* ← ancho del sidebar */
+  min-height: calc(100vh - 64px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Sidebar (menú lateral izquierdo) ───────────────────
+ * Se queda fijo mientras scrolleas el contenido.
+ */
+aside {
+  border-right: 1px solid var(--border);
+  padding: 1.25rem;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+/* Títulos de sección en el sidebar (NAVEGAR, CATEGORÍAS...) */
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.section-label:first-child { margin-top: 0; }
+
+/* Botones del sidebar (cada categoría) */
+.platform-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  transition: all 0.15s;
+  margin-bottom: 1px;
+}
+
+.platform-btn:hover  { background: var(--surface2); color: var(--text); }
+.platform-btn.active { background: var(--surface2); border-color: var(--border2); color: var(--text); }
+
+/* Punto de color antes de cada categoría */
+.platform-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Contador de elementos (el número a la derecha) */
+.platform-count {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+/* Botones de filtro más pequeños */
+#filtros .platform-btn { font-size: 0.8rem; }
+
+/* Toggle Grid / Lista */
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.view-btn {
+  padding: 0.35rem 0.6rem;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.view-btn.active { background: var(--surface2); color: var(--text); }
+
+/* ── Área de contenido principal ────────────────────────
+ * El área grande a la derecha del sidebar.
+ */
+main {
+  padding: 2rem;
+  overflow: hidden;
+}
+
+/* Cabecera de sección (título + contador) */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.section-header h2 {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.8rem;
+  letter-spacing: 2px;
+}
+
+.count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── Responsive: ocultar sidebar en móvil ───────────────
+ * En pantallas pequeñas el sidebar desaparece.
+ */
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  aside   { display: none; }
+  .header-stats { display: none; }
+}
+
+@media (max-width: 480px) {
+  main { padding: 1rem; }
+}

@@ -1,0 +1,618 @@
+/*
+ * ╔══════════════════════════════════════════════════════╗
+ * ║  forms.css — FORMULARIOS, MODALES Y BUSCADOR        ║
+ * ╠══════════════════════════════════════════════════════╣
+ * ║  Estilos para:                                       ║
+ * ║  · El formulario de añadir elemento                  ║
+ * ║  · El modal de confirmación de borrado               ║
+ * ║  · La barra de búsqueda global                       ║
+ * ║  · Botones generales (CTA, link, cerrar)             ║
+ * ║  · El input de fecha personalizado (date picker)     ║
+ * ║  · Los inputs de número con botones +/−              ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
+
+/* ── Panel del formulario de añadir ────────────────────
+ * El recuadro que aparece al pulsar "+ Añadir".
+ */
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+
+/* Grid de inputs del formulario */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Estilo base de todos los inputs y selects del formulario */
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-grid input:focus,
+.form-grid select:focus { border-color: rgba(232, 255, 71, 0.35); }
+
+.form-grid select option { background: var(--surface2); }
+
+.form-grid input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+/* Label para checkboxes */
+.labelFormulario {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* Botón de enviar del formulario */
+.form-grid button[type="submit"] {
+  padding: 0.65rem 1.5rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  align-self: end;
+}
+
+.form-grid button[type="submit"]:hover { opacity: 0.85; }
+
+/* ── Formulario dentro del modal de edición ─────────────
+ * El grid del formulario cuando está dentro de un modal.
+ */
+#modal-contenido,
+#me-form-contenido {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+#modal-contenido input,
+#modal-contenido select,
+#me-form-contenido input,
+#me-form-contenido select {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#modal-contenido input:focus,
+#modal-contenido select:focus,
+#me-form-contenido input:focus,
+#me-form-contenido select:focus { border-color: rgba(232, 255, 71, 0.35); }
+
+#modal-contenido select option,
+#me-form-contenido select option { background: var(--surface2); }
+
+#modal-contenido input[type="checkbox"],
+#me-form-contenido input[type="checkbox"] { width: auto; }
+
+/* ── Buscador global ────────────────────────────────────
+ * La barra de búsqueda del header.
+ */
+.search-wrap { position: relative; }
+
+.search-wrap svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search-wrap input[type="search"] {
+  padding: 0.5rem 1rem 0.5rem 2.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  width: 540px;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.search-wrap input[type="search"]:focus {
+  border-color: rgba(232, 255, 71, 0.35);
+  width: 720px;
+}
+
+.search-wrap input[type="search"]::placeholder { color: var(--muted); }
+
+/* Resultados del buscador */
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.resultado-item {
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.resultado-item:last-child { border-bottom: none; }
+.resultado-item:hover { background: var(--surface2); }
+.resultado-item small {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  margin-left: auto;
+}
+
+/* ── Modales (confirmación, etc.) ───────────────────────
+ * El overlay oscuro que aparece detrás de los modales.
+ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.oculto { display: none; }
+
+/* El cuadro blanco/oscuro del modal */
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+}
+
+/* Botón X para cerrar modales */
+.close-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+
+.close-btn:hover { color: var(--text); }
+
+/* ── Botones globales ───────────────────────────────────
+ * .cta-btn  → botón principal amarillo (+ Añadir)
+ * .link-btn → botón secundario con borde
+ */
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.cta-btn:hover { opacity: 0.85; }
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.link-btn:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── Inputs de tipo número: quitar flechas nativas ──────
+ * Ocultamos las flechas del navegador porque usamos
+ * nuestros propios botones +/− (.num-wrap).
+ */
+input[type="date"],
+input[type="number"] {
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  margin: 0;
+  display: none;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield;
+}
+
+/* ── Input número con botones +/− propios ───────────────
+ * El contenedor que envuelve el input con sus botones.
+ * Se crea automáticamente con wrapNumberInputs() en JS.
+ */
+.num-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.num-wrap:focus-within { border-color: var(--accent); }
+
+.num-wrap input[type="number"] {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: center;
+  padding: 0.6rem 0.25rem;
+  min-width: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--text);
+  outline: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Botones − y + del input número */
+.num-btn {
+  width: 32px;
+  height: 100%;
+  min-height: 38px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.num-btn:hover {
+  background: rgba(232, 255, 71, 0.08);
+  color: var(--accent);
+}
+
+/* ── Date Picker personalizado ──────────────────────────
+ * El selector de fecha que reemplaza al input[type=date]
+ * nativo del navegador. Se inicializa con initDatePickers() en JS.
+ *
+ * Para cambiar el tamaño del calendario: .date-picker-dropdown → width
+ */
+.date-picker-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* El "input" visual que muestra la fecha seleccionada */
+.date-picker-input {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.date-picker-input:hover { border-color: var(--border2); }
+.date-picker-input.open  { border-color: var(--accent); }
+
+.date-picker-icon {
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+
+/* El dropdown del calendario */
+.date-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 999;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 0.65rem;
+  width: 220px;   /* ← ancho del calendario */
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: fadeUp 0.15s ease both;
+}
+
+/* Header del calendario (mes/año + flechas de navegación) */
+.dp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+/* Flechas ‹ › para cambiar mes/año */
+.dp-nav {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.dp-nav:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Texto "Enero 2024" en el header (clickable para ir a vista de meses) */
+.dp-mes-año {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.dp-mes-año:hover { color: var(--accent); }
+
+/* Fila de nombres de días (Lu Ma Mi...) */
+.dp-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.35rem;
+}
+
+.dp-dia-label {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--muted);
+  padding: 0.2rem 0;
+}
+
+/* Grid de días del mes */
+.dp-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+/* Cada día del calendario */
+.dp-dia {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dp-dia:hover:not(.dp-dia-vacio):not(.dp-dia-sel) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dp-dia-vacio { cursor: default; }
+
+/* El día de hoy — borde amarillo */
+.dp-dia-hoy {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+/* El día seleccionado — fondo amarillo */
+.dp-dia-sel {
+  background: var(--accent) !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+
+/* Footer con botones "Hoy" y "Limpiar" */
+.dp-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.dp-hoy-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+
+.dp-hoy-btn:hover { background: rgba(232, 255, 71, 0.08); }
+
+.dp-limpiar-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  transition: color 0.15s;
+}
+
+.dp-limpiar-btn:hover { color: var(--text); }
+
+/* Vista de selección de mes (grid 3x4) */
+.dp-meses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.dp-mes-btn {
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.dp-mes-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+.dp-mes-btn.sel   { border-color: var(--accent); color: var(--accent); }
+
+/* Vista de selección de año (grid 3 columnas, scrollable) */
+.dp-años {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.dp-año-btn {
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.dp-año-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+.dp-año-btn.sel   { border-color: var(--accent); color: var(--accent); }
+
+/* ── Búsqueda responsive ────────────────────────────────*/
+@media (max-width: 480px) {
+  .search-wrap input[type="search"] { width: 160px; }
+  .search-wrap input[type="search"]:focus { width: 200px; }
+}
