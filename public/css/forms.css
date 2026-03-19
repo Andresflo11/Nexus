@@ -128,21 +128,23 @@
 #modal-contenido input[type="checkbox"],
 #me-form-contenido input[type="checkbox"] { width: auto; }
 
+.search-filtro-dropdown {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 0.4rem;
+    min-width: max-content;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
 /* ── Buscador global ────────────────────────────────────
  * La barra de búsqueda del header.
  */
-.search-wrap { position: relative; }
-
-.search-wrap .search-icon {
-  color: var(--muted);
-  flex-shrink: 0;
-  pointer-events: none;
-}
-
-.search-filtro svg {
-  position: static;
-  transform: none;
-}
 
 .search-wrap input[type="search"] {
   padding: 0.5rem 1rem;

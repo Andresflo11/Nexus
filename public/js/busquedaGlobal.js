@@ -27,6 +27,17 @@ filtroWrap?.addEventListener("click", (e) => {
     filtroDropdown.classList.toggle("oculto");
     buscador.classList.toggle("expandido", !abierto);
     if (!abierto) posicionarDropdown();
+
+    // En el index mover el dropdown al body para evitar problemas de z-index
+    const esIndex = window.location.pathname === "/" || window.location.pathname.endsWith("index.html");
+    if (esIndex && !abierto) {
+        document.body.appendChild(filtroDropdown);
+        filtroDropdown.style.position = "fixed";
+        const rect = filtroWrap.getBoundingClientRect();
+        filtroDropdown.style.top  = `${rect.bottom + 8}px`;
+        filtroDropdown.style.left = `${rect.left}px`;
+        filtroDropdown.style.right = "auto";
+    }
 });
 
 // Reposicionar cuando el input termine su animación de expansión
@@ -45,6 +56,8 @@ buscador.addEventListener("transitionstart", () => {
 });
 
 function posicionarDropdown() {
+    const esIndex = window.location.pathname === "/" || window.location.pathname.endsWith("index.html");
+    if (esIndex) return; // en index lo posiciona el CSS
     const rect = filtroWrap.getBoundingClientRect();
     filtroDropdown.style.top  = `${rect.bottom + 8}px`;
     filtroDropdown.style.left = `${rect.left}px`;
@@ -70,10 +83,13 @@ filtroTexto.innerHTML = label === "Todo"
     });
 });
 
-// Cerrar al hacer click fuera
-document.addEventListener("click", () => {
+document.addEventListener("click", (e) => {
     filtroDropdown?.classList.add("oculto");
     buscador.classList.remove("expandido");
+
+    if (!buscador.contains(e.target) && !portal.contains(e.target)) {
+        portal.style.display = "none";
+    }
 });
 
 filtroDropdown?.addEventListener("mousedown", (e) => {
@@ -114,58 +130,65 @@ buscador.addEventListener("input", function () {
     debounceTimer = setTimeout(ejecutarBusqueda, 220);
 });
 
+        // Portal fijo independiente para los resultados
+    const portal = document.createElement("div");
+    portal.className = "search-results";
+    portal.style.cssText = "position:fixed;z-index:99999;display:none";
+    document.body.appendChild(portal);
 
-    // ── Cerrar resultados al hacer click fuera ────────────────
-    document.addEventListener("click", (e) => {
-        if (!buscador.contains(e.target) && !contenedor.contains(e.target)) {
-            contenedor.innerHTML = "";
-        }
-    });
-
-    // ── Mostrar los resultados en el dropdown ─────────────────
-    function mostrarResultados(items) {
-        contenedor.innerHTML = "";
-
-        // Si no hay resultados, mostrar mensaje
-        if (!items.length) {
-            contenedor.innerHTML = `<div class="resultado-item" style="color:var(--muted);cursor:default">Sin resultados</div>`;
-            return;
-        }
-
-        // Mostrar máximo 8 resultados en el dropdown
-        items.slice(0, 8).forEach(item => { // ← cambia 8 para mostrar más o menos resultados
-            const div = document.createElement("div");
-            div.classList.add("resultado-item");
-
-            const color    = CONFIG[item.tipo]?.color ?? "#888";
-            const valColor = valoracionColor(item.valoracion);
-            const valLabel = valoracionLabel(item.valoracion);
-
-            // Badge de valoración (solo si tiene valoración)
-            const val = item.valoracion != null
-                ? `<span class="list-rating" style="background:${valColor}20;color:${valColor}">${valLabel}</span>`
-                : "";
-
-            div.innerHTML = `
-                 <span style="display:inline-flex;align-items:center">${tipoSVG(item.tipo, 14)}</span>
-                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.titulo}</span>
-                <small style="color:${color}">${item.tipo}</small>
-                ${val}
-            `;
-
-            // Al hacer click en un resultado, ir a esa categoría
-            div.addEventListener("click", () => {
-    contenedor.innerHTML = "";
-    buscador.value = "";
-    const tipoActual = new URLSearchParams(window.location.search).get("tipo");
-    if (tipoActual === item.tipo) {
-        window.location.hash = `card-${item.id}`;
-    } else {
-        window.location.href = `/pages/categoria.html?tipo=${item.tipo}#card-${item.id}`;
+    function posicionarPortal() {
+        const rect = buscador.getBoundingClientRect();
+        portal.style.top   = `${rect.bottom + 6}px`;
+        portal.style.left  = `${rect.left}px`;
+        portal.style.width = `${rect.width}px`;
     }
-});
 
-            contenedor.appendChild(div);
-        });
+    function mostrarResultados(items) {
+        portal.innerHTML = "";
+
+        if (!items.length) {
+            portal.innerHTML = `<div class="resultado-item" style="color:var(--muted);cursor:default">Sin resultados</div>`;
+        } else {
+            items.slice(0, 8).forEach(item => {
+                const div = document.createElement("div");
+                div.classList.add("resultado-item");
+
+                const color    = CONFIG[item.tipo]?.color ?? "#888";
+                const valColor = valoracionColor(item.valoracion);
+                const valLabel = valoracionLabel(item.valoracion);
+
+                const val = item.valoracion != null
+                    ? `<span class="list-rating" style="background:${valColor}20;color:${valColor}">${valLabel}</span>`
+                    : "";
+
+                div.innerHTML = `
+                    <span style="display:inline-flex;align-items:center">${tipoSVG(item.tipo, 14)}</span>
+                    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.titulo}</span>
+                    <small style="color:${color}">${item.tipo}</small>
+                    ${val}
+                `;
+
+                div.addEventListener("click", () => {
+                    portal.style.display = "none";
+                    buscador.value = "";
+                    const esIndex = window.location.pathname === "/" || window.location.pathname.endsWith("index.html");
+                    if (esIndex) {
+                        window.location.href = `/pages/item.html?id=${item.id}`;
+                        return;
+                    }
+                    const tipoActual = new URLSearchParams(window.location.search).get("tipo");
+                    if (tipoActual === item.tipo) {
+                        window.location.hash = `card-${item.id}`;
+                    } else {
+                        window.location.href = `/pages/categoria.html?tipo=${item.tipo}#card-${item.id}`;
+                    }
+                });
+
+                portal.appendChild(div);
+            });
+        }
+
+        posicionarPortal();
+        portal.style.display = "block";
     }
 })();

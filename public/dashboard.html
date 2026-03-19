@@ -3,38 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS — Categoría</title>
+<title>NEXUS — Tu Universo Media</title>
 <link rel="stylesheet" href="/css/main.css">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
 </head>
 <body>
-
 <header>
   <div class="logo"><a href="/" style="text-decoration:none;color:inherit">NEXUS<span>.</span></a></div>
   <div class="header-stats">
-    <div class="header-stat"><strong id="total-count">0</strong>EN ESTA LISTA</div>
-    <div class="header-stat"><strong id="avg-rating-header">—</strong>RATING MEDIO</div>
-    <div class="header-stat"><strong id="completados-count">0</strong>COMPLETADOS</div>
+    <div class="header-stat"><strong id="total-count">0</strong>ELEMENTOS</div>
+    <div class="header-stat"><strong id="categorias-count">0</strong>CATEGORÍAS</div>
+    <div class="header-stat"><strong id="avg-rating">—</strong>RATING MEDIO</div>
   </div>
   <div class="header-actions">
-   <!-- Barra de búsqueda -->
+
+    <!-- Barra de búsqueda -->
     <div class="search-wrap">
 
       <!-- Filtro de categoría (solo el trigger, sin dropdown dentro) -->
       <div id="filtroBusqueda" class="search-filtro">
         <span id="filtroBusqueda-texto">
+          
           Filtrar
         </span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
       </div>
+
+
       <!-- Input de búsqueda -->
       <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-       <input type="search" id="buscadorGlobal" placeholder="Buscar..." autocomplete="off">
-
+<input type="search" id="buscadorGlobal" placeholder="Buscar..." autocomplete="off">
       <!-- Resultados de búsqueda -->
       <div id="resultadosBusqueda" class="search-results"></div>
     </div>
-
 
     <!-- Dropdown del filtro FUERA del search-wrap para evitar conflictos de flex -->
     <div id="filtroBusqueda-dropdown" class="search-filtro-dropdown oculto">
@@ -71,123 +72,94 @@
         <span>Libros</span>
       </div>
     </div>
-</div>
 
-    <button class="cta-btn" onclick="abrirFormModal(tipo)">+ Añadir</button>
   </div>
+  <button class="cta-btn" onclick="abrirFormModal()">+ Añadir</button>
 </header>
 
 <div class="layout">
   <aside>
+    <div class="section-label">Ordenar</div>
+    <select id="sort-index" onchange="ordenarDashboard()" style="width:100%;padding:0.5rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;">
+      <option value="reciente">Más reciente</option>
+      <option value="rating-desc">Mayor rating</option>
+      <option value="rating-asc">Menor rating</option>
+      <option value="titulo">A – Z</option>
+      <option value="categoria">Por categoría</option>
+    </select>
+
     <div class="section-label">Navegar</div>
     <a class="platform-btn" href="/">
       <span class="platform-dot" style="background:var(--accent)"></span>
-      ← Inicio
+      Inicio
     </a>
-    <a class="platform-btn active" href="/dashboard.html">
-      <span class="platform-dot" style="background:var(--accent)"></span>
-      Dashboard
-    </a>
-
     <div class="section-label">Categorías</div>
     <a class="platform-btn" href="/pages/categoria.html?tipo=juegos">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="11" r="1" fill="#7c5cfc"/><circle cx="18" cy="13" r="1" fill="#7c5cfc"/></svg>
-    Juegos <span class="cnt" id="cnt-juegos"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=peliculas">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ed1c24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
-    Películas <span class="cnt" id="cnt-peliculas"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=series">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
-    Series <span class="cnt" id="cnt-series"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=animes">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2e51a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="11" r="1" fill="#7c5cfc"/><circle cx="18" cy="13" r="1" fill="#7c5cfc"/></svg>
+      Juegos <span class="cnt" id="cnt-juegos"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=peliculas">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ed1c24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
+      Películas <span class="cnt" id="cnt-peliculas"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=series">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+      Series <span class="cnt" id="cnt-series"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=animes">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2e51a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="2" y1="6" x2="22" y2="6"/>
         <line x1="4" y1="3" x2="20" y2="3"/>
         <line x1="6" y1="6" x2="6" y2="20"/>
         <line x1="18" y1="6" x2="18" y2="20"/>
         <line x1="6" y1="9" x2="18" y2="9"/>
-    </svg>
-    Animes <span class="cnt" id="cnt-animes"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=mangas">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    Mangas <span class="cnt" id="cnt-mangas"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=comics">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h4"/></svg>
-    Cómics <span class="cnt" id="cnt-comics"></span>
-</a>
-<a class="platform-btn" href="/pages/categoria.html?tipo=libros">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a85e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-    Libros <span class="cnt" id="cnt-libros"></span>
-</a>
-
-    <div class="section-label" style="margin-top:1.5rem">Filtrar por estado</div>
-    <div id="filtros"></div>
-
-    <div class="section-label" style="margin-top:1.5rem">Ordenar</div>
-    <select id="sort-select" onchange="aplicarOrden()" style="width:100%;padding:0.5rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;">
-      <option value="reciente">Más reciente</option>
-      <option value="rating-desc">Mayor rating</option>
-      <option value="rating-asc">Menor rating</option>
-      <option value="titulo">A – Z</option>
-      <option value="año-desc">Año ↓ (nuevo→viejo)</option>   <!-- ← nuevo -->
-      <option value="año-asc">Año ↑ (viejo→nuevo)</option> 
-    </select>
-
-    <div class="section-label" style="margin-top:1.5rem">Vista</div>
-    <div class="view-toggle" style="width:100%">
-      <button class="view-btn active" id="grid-btn" onclick="setView('grid')" style="flex:1">⊞ Grid</button>
-      <button class="view-btn" id="list-btn" onclick="setView('list')" style="flex:1">☰ Lista</button>
-    </div>
+      </svg>
+      Animes <span class="cnt" id="cnt-animes"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=mangas">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Mangas <span class="cnt" id="cnt-mangas"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=comics">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h4"/></svg>
+      Cómics <span class="cnt" id="cnt-comics"></span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=libros">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a85e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Libros <span class="cnt" id="cnt-libros"></span>
+    </a>
   </aside>
 
   <main>
-    <div class="section-header">
-      <h2 id="titulo-categoria">CARGANDO...</h2>
-      <span class="count" id="showing-count"></span>
-    </div>
+    <section class="hero-section">
+      <h1 class="hero-title">Tu universo<br><span>media personal</span></h1>
+      <p class="hero-sub">Lleva el registro de todo lo que consumes: juegos, series, películas, anime, manga, cómics y libros en un solo lugar.</p>
+    </section>
 
-    <!-- Formulario de añadir -->
-    <div id="form-container" class="form-panel oculto">
-      <h3 class="form-title">Añadir nuevo elemento</h3>
-      <form id="formulario" class="form-grid"></form>
-    </div>
+    <!-- Stats grid -->
+    <div class="stats-grid" id="stats-grid"></div>
 
-    <!-- Lista/Grid de items -->
-    <div id="lista"></div>
+    <!-- Recent items -->
+    <div class="section-header" style="margin-top:2.5rem">
+      <h2>EN PROGRESO</h2>
+      <span class="count" id="recent-count"></span>
+    </div>
+    <div class="media-grid" id="recent-grid"></div>
+
+    <!-- Top rated -->
+    <div class="section-header" style="margin-top:2.5rem">
+      <h2>PAUSADO / PENDIENTE</h2>
+    </div>
+    <div class="media-grid" id="top-grid"></div>
   </main>
 </div>
 
-<!-- Modal confirmación eliminar -->
-<div class="modal-overlay oculto" id="modalConfirmacion">
-  <div class="modal" style="max-width:380px;text-align:center">
-    <div style="font-size:2.5rem;margin-bottom:1rem">🗑</div>
-    <h3 style="font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:2px;margin-bottom:0.5rem">CONFIRMAR ELIMINACIÓN</h3>
-    <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.5rem">Esta acción no se puede deshacer. ¿Estás seguro?</p>
-    <div style="display:flex;gap:0.75rem;justify-content:center">
-      <button id="btnCancelar" class="link-btn" style="padding:0.6rem 1.5rem">Cancelar</button>
-      <button id="btnConfirmar" class="cta-btn" style="background:#ef4444;border-color:#ef4444">Eliminar</button>
-    </div>
-  </div>
-</div>
-<!-- Modal expandido de card -->
 <div class="modal-overlay oculto" id="modal-expandido">
   <div class="modal-expandido-inner">
-
-    <!-- Fondo con imagen blur -->
     <div class="me-bg" id="me-bg"></div>
-
-    <!-- Contenido -->
     <div class="me-layout">
-
-      <!-- Columna izquierda: póster + acciones rápidas -->
       <div class="me-sidebar">
         <div class="me-poster" id="me-poster"></div>
-
         <div class="me-acciones">
           <select id="me-estado" onchange="meGuardarCampo('estado', this.value)"></select>
           <select id="me-valoracion" onchange="meGuardarCampo('valoracion', parseInt(this.value))">
@@ -201,17 +173,11 @@
           <button class="me-btn-completar" id="me-btn-completar" onclick="meCompletarRapido()"></button>
         </div>
       </div>
-
-      <!-- Columna derecha: info -->
       <div class="me-contenido">
         <button class="close-btn" style="margin-left:auto;display:flex" onclick="cerrarModalExpandido()">✕</button>
-
         <h2 class="me-titulo" id="me-titulo"></h2>
-
         <div class="me-meta" id="me-meta"></div>
         <div id="me-dlcs" class="oculto" style="margin-bottom:1.25rem"></div>
-
-        <!-- Progreso episodios (series/animes) -->
         <div id="me-episodios" class="oculto">
           <div class="me-progreso-header">
             <span id="me-progreso-texto"></span>
@@ -222,15 +188,12 @@
             </div>
           </div>
           <div class="progress-wrap" style="margin-bottom:1.25rem">
-            <div class="progress-fill" id="me-barra-ep" style="width:0%;will-change:width;transform:translateZ(0)"></div>
+            <div class="progress-fill" id="me-barra-ep" style="width:0%"></div>
           </div>
-
-          <!-- Tabs de temporadas -->
           <div class="me-tabs" id="me-tabs"></div>
           <div class="me-tab-contenido" id="me-tab-contenido"></div>
         </div>
-         <div id="me-tomos" class="oculto"></div>
-        <!-- Progreso capítulos (comics/mangas) -->
+        <div id="me-tomos" class="oculto"></div>
         <div id="me-capitulos" class="oculto">
           <div class="me-progreso-header">
             <span id="me-cap-texto"></span>
@@ -244,8 +207,6 @@
             <div class="progress-fill" id="me-barra-cap" style="width:0%"></div>
           </div>
         </div>
-
-        <!-- Progreso páginas (libros) -->
         <div id="me-paginas" class="oculto">
           <div class="me-progreso-header">
             <span id="me-pag-texto"></span>
@@ -259,8 +220,6 @@
             <div class="progress-fill" id="me-barra-pag" style="width:0%"></div>
           </div>
         </div>
-
-        <button class="me-btn-editar" onclick="meAbrirEdicion()">✏ Editar todos los campos</button>
       </div>
     </div>
   </div>
@@ -287,10 +246,10 @@
 <script src="/js/datePicker.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/busquedaGlobal.js"></script>
-<script src="/js/cat-core.js"></script>
-<script src="/js/cat-render.js"></script>
 <script src="/js/cat-forms.js"></script>
-<script src="/js/form-modal.js"></script>
 <script src="/js/cat-modal.js"></script>
+<script src="/js/form-modal.js"></script>
+<script src="/js/index-dashboard.js"></script>
+<script src="/js/index-modal.js"></script>
 </body>
 </html>

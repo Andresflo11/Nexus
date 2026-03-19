@@ -79,6 +79,8 @@
   display: block;
   transition: all 0.2s;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card:hover {

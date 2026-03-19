@@ -19,6 +19,14 @@ const TIPOS = ["juegos", "peliculas", "series", "animes", "mangas", "comics", "l
 // Todos los items cargados de la BD (se usa en toda la página)
 let todosLosItems = [];
 
+function actualizarItemSilencioso(item) {
+    fetch(`/items/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item)
+    }).catch(err => console.error("Error al actualizar:", err));
+}
+
 // ── Cargar todo al arrancar ───────────────────────────────
 // Hace una sola petición con todos los items y luego
 // cada función de render filtra lo que necesita.
@@ -223,15 +231,6 @@ function marcarSidebarActivo() {
         btn.classList.toggle("active",
             btn.getAttribute("href") === "/" || btn.getAttribute("href") === "/index.html");
     });
-}
-
-// ── Helper: escapar HTML para evitar XSS ─────────────────
-function esc(str) {
-    return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
 }
 
 // Arrancar cuando el DOM esté listo

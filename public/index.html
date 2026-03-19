@@ -3,159 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS — Tu Universo Media</title>
+<title>NEXUS</title>
 <link rel="stylesheet" href="/css/main.css">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
 </head>
 <body>
 
-<header>
+<!-- Topbar mínima -->
+<div class="home-topbar">
   <div class="logo">NEXUS<span>.</span></div>
-  <div class="header-stats">
-    <div class="header-stat"><strong id="total-count">0</strong>ELEMENTOS</div>
-    <div class="header-stat"><strong id="categorias-count">0</strong>CATEGORÍAS</div>
-    <div class="header-stat"><strong id="avg-rating">—</strong>RATING MEDIO</div>
-  </div>
-  <div class="header-actions">
-
-    <!-- Barra de búsqueda -->
-    <div class="search-wrap">
-
-      <!-- Filtro de categoría (solo el trigger, sin dropdown dentro) -->
-      <div id="filtroBusqueda" class="search-filtro">
-        <span id="filtroBusqueda-texto">
-          
-          Filtrar
-        </span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
-      </div>
-
-
-      <!-- Input de búsqueda -->
-      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-<input type="search" id="buscadorGlobal" placeholder="Buscar..." autocomplete="off">
-      <!-- Resultados de búsqueda -->
-      <div id="resultadosBusqueda" class="search-results"></div>
-    </div>
-
-    <!-- Dropdown del filtro FUERA del search-wrap para evitar conflictos de flex -->
-    <div id="filtroBusqueda-dropdown" class="search-filtro-dropdown oculto">
-      <div class="search-filtro-opt" data-value="">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Todo</span>
-      </div>
-      <div class="search-filtro-opt" data-value="juegos">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="11" r="1" fill="#7c5cfc"/><circle cx="18" cy="13" r="1" fill="#7c5cfc"/></svg>
-        <span>Juegos</span>
-      </div>
-      <div class="search-filtro-opt" data-value="peliculas">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ed1c24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
-        <span>Películas</span>
-      </div>
-      <div class="search-filtro-opt" data-value="series">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00c030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
-        <span>Series</span>
-      </div>
-      <div class="search-filtro-opt" data-value="animes">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2e51a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="6" x2="22" y2="6"/><line x1="4" y1="3" x2="20" y2="3"/><line x1="6" y1="6" x2="6" y2="20"/><line x1="18" y1="6" x2="18" y2="20"/><line x1="6" y1="9" x2="18" y2="9"/></svg>
-        <span>Animes</span>
-      </div>
-      <div class="search-filtro-opt" data-value="mangas">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>Mangas</span>
-      </div>
-      <div class="search-filtro-opt" data-value="comics">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h4"/></svg>
-        <span>Cómics</span>
-      </div>
-      <div class="search-filtro-opt" data-value="libros">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8a85e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        <span>Libros</span>
-      </div>
-    </div>
-
+  <div class="home-topbar-links">
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/pages/categoria.html?tipo=juegos">Juegos</a>
+    <a href="/pages/categoria.html?tipo=peliculas">Películas</a>
+    <a href="/pages/categoria.html?tipo=series">Series</a>
+    <a href="/pages/categoria.html?tipo=animes">Animes</a>
+    <a href="/pages/categoria.html?tipo=mangas">Mangas</a>
+    <a href="/pages/categoria.html?tipo=comics">Cómics</a>
+    <a href="/pages/categoria.html?tipo=libros">Libros</a>
   </div>
   <button class="cta-btn" onclick="abrirFormModal()">+ Añadir</button>
-</header>
-
-<div class="layout">
-  <aside>
-    <div class="section-label">Ordenar</div>
-    <select id="sort-index" onchange="ordenarDashboard()" style="width:100%;padding:0.5rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;">
-      <option value="reciente">Más reciente</option>
-      <option value="rating-desc">Mayor rating</option>
-      <option value="rating-asc">Menor rating</option>
-      <option value="titulo">A – Z</option>
-      <option value="categoria">Por categoría</option>
-    </select>
-
-    <div class="section-label">Navegar</div>
-    <a class="platform-btn active" href="/">
-      <span class="platform-dot" style="background:var(--accent)"></span>
-      Inicio
-    </a>
-
-    <div class="section-label">Categorías</div>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=juegos">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="11" r="1" fill="#7c5cfc"/><circle cx="18" cy="13" r="1" fill="#7c5cfc"/></svg>
-      Juegos <span class="cnt" id="cnt-juegos"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=peliculas">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ed1c24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
-      Películas <span class="cnt" id="cnt-peliculas"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=series">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
-      Series <span class="cnt" id="cnt-series"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=animes">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2e51a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="2" y1="6" x2="22" y2="6"/>
-        <line x1="4" y1="3" x2="20" y2="3"/>
-        <line x1="6" y1="6" x2="6" y2="20"/>
-        <line x1="18" y1="6" x2="18" y2="20"/>
-        <line x1="6" y1="9" x2="18" y2="9"/>
-      </svg>
-      Animes <span class="cnt" id="cnt-animes"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=mangas">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Mangas <span class="cnt" id="cnt-mangas"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=comics">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h4"/></svg>
-      Cómics <span class="cnt" id="cnt-comics"></span>
-    </a>
-    <a class="platform-btn" href="/pages/categoria.html?tipo=libros">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a85e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      Libros <span class="cnt" id="cnt-libros"></span>
-    </a>
-  </aside>
-
-  <main>
-    <section class="hero-section">
-      <h1 class="hero-title">Tu universo<br><span>media personal</span></h1>
-      <p class="hero-sub">Lleva el registro de todo lo que consumes: juegos, series, películas, anime, manga, cómics y libros en un solo lugar.</p>
-    </section>
-
-    <!-- Stats grid -->
-    <div class="stats-grid" id="stats-grid"></div>
-
-    <!-- Recent items -->
-    <div class="section-header" style="margin-top:2.5rem">
-      <h2>EN PROGRESO</h2>
-      <span class="count" id="recent-count"></span>
-    </div>
-    <div class="media-grid" id="recent-grid"></div>
-
-    <!-- Top rated -->
-    <div class="section-header" style="margin-top:2.5rem">
-      <h2>PAUSADO / PENDIENTE</h2>
-    </div>
-    <div class="media-grid" id="top-grid"></div>
-  </main>
 </div>
 
+<div class="home-wrap">
+
+  <!-- Hero + buscador -->
+  <div class="home-hero">
+    <div class="home-logo">NEXUS<span>.</span></div>
+    <div class="home-sub">Tu universo media personal</div>
+
+    <div class="home-search-wrap">
+      <div class="search-wrap">
+        <div id="filtroBusqueda" class="search-filtro">
+          <span id="filtroBusqueda-texto">Filtrar</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" id="buscadorGlobal" placeholder="Buscar en tu colección..." autocomplete="off">
+        <div id="resultadosBusqueda" class="search-results"></div>
+      </div>
+
+      <div id="filtroBusqueda-dropdown" class="search-filtro-dropdown oculto">
+        <div class="search-filtro-opt" data-value=""><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Todo</span></div>
+        <div class="search-filtro-opt" data-value="juegos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="11" r="1" fill="#7c5cfc"/><circle cx="18" cy="13" r="1" fill="#7c5cfc"/></svg><span>Juegos</span></div>
+        <div class="search-filtro-opt" data-value="peliculas"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ed1c24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg><span>Películas</span></div>
+        <div class="search-filtro-opt" data-value="series"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00c030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><span>Series</span></div>
+        <div class="search-filtro-opt" data-value="animes"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2e51a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="6" x2="22" y2="6"/><line x1="4" y1="3" x2="20" y2="3"/><line x1="6" y1="6" x2="6" y2="20"/><line x1="18" y1="6" x2="18" y2="20"/><line x1="6" y1="9" x2="18" y2="9"/></svg><span>Animes</span></div>
+        <div class="search-filtro-opt" data-value="mangas"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Mangas</span></div>
+        <div class="search-filtro-opt" data-value="comics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h4"/></svg><span>Cómics</span></div>
+        <div class="search-filtro-opt" data-value="libros"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8a85e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Libros</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categorías con items -->
+  <div style="position:relative;width:100%;padding-bottom:4rem">
+    <div class="home-fondo-blur" id="home-fondo-blur"></div>
+    <div class="home-categorias" id="home-categorias"></div>
+  </div>
+
+</div>
+
+<!-- Modal expandido -->
 <div class="modal-overlay oculto" id="modal-expandido">
   <div class="modal-expandido-inner">
     <div class="me-bg" id="me-bg"></div>
@@ -226,32 +135,28 @@
     </div>
   </div>
 </div>
+
 <!-- Modal formulario universal -->
 <div class="modal-overlay oculto" id="modal-formulario">
   <div class="modal-expandido-inner" style="max-width:680px;overflow-y:auto;max-height:90vh">
     <div style="padding:2rem">
-
-      <!-- Título dinámico -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
         <div id="form-modal-titulo" style="display:flex;align-items:center;gap:0.6rem;font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px"></div>
         <button onclick="cerrarFormModal()" class="close-btn">✕</button>
       </div>
-
-      <!-- Selector de categoría -->
       <div id="form-modal-categorias" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1.5rem"></div>
-
-      <!-- Campos del formulario -->
       <form id="form-modal-campos" class="form-grid"></form>
     </div>
   </div>
 </div>
+
 <script src="/js/datePicker.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/busquedaGlobal.js"></script>
-<script src="/js/cat-forms.js"></script>    <!-- ← para leerDlcsDelForm, leerTomosDeLForm, etc -->
+<script src="/js/cat-forms.js"></script>
 <script src="/js/cat-modal.js"></script>
 <script src="/js/form-modal.js"></script>
-<script src="/js/index-dashboard.js"></script>
 <script src="/js/index-modal.js"></script>
+<script src="/js/home.js"></script>
 </body>
 </html>

@@ -73,27 +73,13 @@ body::before {
     margin-left: 0.75rem;
     color: var(--muted);
     flex-shrink: 0;
+    pointer-events: none;
 }
 /* Los SVGs dentro del filtro no deben tener margin */
 .search-filtro svg {
     margin-left: 0;
-}
-
-.search-filtro-dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 0.4rem;
-    min-width: 180px;
-    z-index: 9999;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    /* Quitar !important ya no hace falta */
+    position: static;
+    transform: none;
 }
 
 .search-filtro-dropdown .search-filtro-opt {
@@ -142,12 +128,6 @@ body::before {
     height: 4px;
     border-radius: 12px 12px 0 0;
 }
-
-.stat-card {
-    position: relative;
-    overflow: hidden;
-}
-
 
 /* ── Animación de entrada (usada en cards) ────────────── */
 @keyframes fadeUp {

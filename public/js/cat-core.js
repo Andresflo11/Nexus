@@ -111,15 +111,6 @@ function actualizarHeader() {
     document.getElementById("avg-rating-header").textContent = avg;
 }
 
-// ── Helper: escapar HTML para evitar XSS ─────────────────
-function esc(str) {
-    return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
-
 // ── DOMContentLoaded: arranque de la página ───────────────
 document.addEventListener("DOMContentLoaded", () => {
     crearFormulario();

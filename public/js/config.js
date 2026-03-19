@@ -202,3 +202,12 @@ function tipoSVG(tipo, size = 16) {
     };
     return svgs[tipo] ?? "";
 }
+
+// Escapar HTML para evitar XSS
+function esc(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}

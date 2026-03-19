@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — Detalle</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
+</head>
+<body>
+
+<div class="item-page">
+
+  <div class="item-topbar">
+    <a href="/" class="logo">NEXUS<span>.</span></a>
+    <button id="back-btn" onclick="history.back()" class="item-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+      Volver
+    </button>
+  </div>
+
+  <div class="item-bg" id="item-bg"></div>
+
+  <div id="item-loading" class="item-loading">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Cargando...
+  </div>
+
+  <div class="item-body" id="item-body" style="display:none">
+
+    <!-- Columna izquierda -->
+    <div class="item-poster-col">
+      <div class="item-poster" id="item-poster"></div>
+      <div class="item-acciones">
+        <select id="item-estado" onchange="guardarCampo('estado', this.value)"></select>
+        <select id="item-valoracion" onchange="guardarCampo('valoracion', parseInt(this.value))">
+          <option value="5">Me Encanta</option>
+          <option value="4">Me gustó</option>
+          <option value="3">Indiferente</option>
+          <option value="2">No me gustó</option>
+          <option value="1">Pésimo</option>
+          <option value="0">Sin valorar</option>
+        </select>
+        <button class="item-btn-completar" id="item-btn-completar" onclick="completarRapido()"></button>
+      </div>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="item-info-col" id="item-info-col"></div>
+
+  </div>
+
+</div>
+
+<script src="/js/datePicker.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/item.js"></script>
+</body>
+</html>

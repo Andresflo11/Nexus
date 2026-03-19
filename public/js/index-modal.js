@@ -18,7 +18,7 @@ function abrirModalDesdeIndex(id) {
     abrirModalExpandido(id);
 }
 
-function actualizarItemSilencioso(item) {
+function actualizarItemSilenciosoIndex(item) {
     fetch(`/items/${item.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
