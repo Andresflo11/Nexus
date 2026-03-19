@@ -352,3 +352,4 @@ function initDatePickers() {
         new DatePicker(input);
     });
 }
+

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — Categoría</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
+</head>
+<body>
+
+<header>
+  <div class="logo"><a href="/" style="text-decoration:none;color:inherit">NEXUS<span>.</span></a></div>
+</header>
+
+<div class="catidx-wrap">
+
+  <!-- Breadcrumb + título -->
+  <div class="catidx-header">
+    <a href="/">← Inicio</a>
+    <span class="catidx-sep">/</span>
+    <h1 class="catidx-titulo" id="catidx-titulo">—</h1>
+    <span class="catidx-count" id="catidx-count"></span>
+  </div>
+
+  <!-- Controles de filtro/orden -->
+  <div class="catidx-controles">
+    <div class="catidx-search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="catidx-search" id="catidx-buscar" placeholder="Filtrar en esta categoría..." autocomplete="off">
+    </div>
+    <select class="catidx-select" id="catidx-estado">
+      <option value="">Todos los estados</option>
+      <option value="completado">Completado</option>
+      <option value="en-progreso">En progreso</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="abandonado">Abandonado</option>
+    </select>
+    <select class="catidx-select" id="catidx-orden">
+      <option value="reciente">Más reciente</option>
+      <option value="titulo">A – Z</option>
+      <option value="rating-desc">Mayor rating</option>
+      <option value="rating-asc">Menor rating</option>
+    </select>
+  </div>
+
+  <!-- Grid -->
+  <div class="catidx-grid" id="catidx-grid"></div>
+
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/categoria-index.js"></script>
+</body>
+</html>

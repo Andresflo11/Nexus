@@ -34,7 +34,7 @@ function renderHomeCategories(items) {
     bloque.innerHTML = `
       <div class="home-cat-titulo" style="--cat-color:${cfg.color}">
         ${svgIcon}
-        <a href="/pages/categoria.html?tipo=${tipo}">${cfg.label.slice(2).toUpperCase()}</a>
+        <a href="/pages/categoria-index.html?tipo=${tipo}">${cfg.label.slice(2).toUpperCase()}</a>
       </div>
       ${lista.length === 0
         ? `<div class="home-cat-empty">Sin elementos todavía — <a href="#" onclick="abrirFormModal()" style="color:var(--accent);text-decoration:none">añadir</a></div>`
@@ -68,7 +68,7 @@ function renderHomeCategories(items) {
           : cfg.label.split(' ')[0];
         card.innerHTML = `
           <div class="home-item-poster">${posterHTML}</div>
-          <div class="home-item-titulo">${it.titulo}</div>
+          <div class="home-item-info"><div class="home-item-titulo">${it.titulo}</div></div>
         `;
         track.appendChild(card);
       });
