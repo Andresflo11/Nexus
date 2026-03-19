@@ -190,7 +190,7 @@ function cardHTML(item, idx) {
     const tieneLogros = item.logros == 1 || item.logros === true;
 
     return `
-    <article class="card ${delay}" onclick="window.location.href='/pages/categoria.html?tipo=${item.tipo}'">
+    <article class="card ${delay}" onclick="abrirModalDesdeIndex(${item.id})">
       <div class="card-poster">
         ${poster}
         ${rating}
@@ -200,7 +200,7 @@ function cardHTML(item, idx) {
         <div class="card-title">${esc(item.titulo)}</div>
         <div class="card-meta">
          <span class="card-tag tag-estado">${esc(item.estado)}</span>
-           ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">📺 ${esc(item.plataforma)}</span>` : ""}
+           ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
            ${cfg.usalogros ? `<span class="card-tag ${claseLogros(item.logros)}">${item.logros === "Todos completados" ? "🏆 " : ""}${item.logros ?? "No tiene logros"}</span>` : ""}
          </div>
         <div class="card-bottom"></div>

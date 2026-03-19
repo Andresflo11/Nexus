@@ -124,15 +124,17 @@ function esc(str) {
 document.addEventListener("DOMContentLoaded", () => {
     crearFormulario();
 
-    // Botón "+ Añadir" abre/cierra el formulario
     const toggleBtn     = document.getElementById("toggle-form");
     const formContainer = document.getElementById("form-container");
 
-    toggleBtn.addEventListener("click", () => {
-        const visible = !formContainer.classList.contains("oculto");
-        formContainer.classList.toggle("oculto", visible);
-        toggleBtn.textContent = visible ? "+ Añadir" : "✕ Cerrar";
-    });
+    // Solo agregar el listener si el botón existe
+    if (toggleBtn && formContainer) {
+        toggleBtn.addEventListener("click", () => {
+            const visible = !formContainer.classList.contains("oculto");
+            formContainer.classList.toggle("oculto", visible);
+            toggleBtn.textContent = visible ? "+ Añadir" : "✕ Cerrar";
+        });
+    }
 
     // Modal de confirmación de borrado
     document.getElementById("btnConfirmar")?.addEventListener("click", () => {

@@ -139,7 +139,7 @@ function renderListItem(item, idx) {
       </div>
       <div class="list-fecha">${item.fecha ?? "—"}</div>
       ${item.valoracion > 0 ? `<div class="list-rating" style="background:${valColor}20;color:${valColor}">${valoracionLabel(item.valoracion)}</div>` : ""}
-      ${config.usalogros ? `<span title="Logros" style="font-size:0.85rem;color:${item.logros ? "#64dd17" : "var(--muted)"}">🏆</span>` : ""}
+      ${config.usalogros ? `<span title="Logros" style="font-size:0.85rem;color:${item.logros ? "#64dd17" : "var(--muted)"}"></span>` : ""}
       <div class="list-actions">
         <button class="card-btn" style="padding:0.3rem 0.6rem" onclick="abrirModalExpandido(${item.id});setTimeout(()=>meAbrirEdicion(),300)">✏</button>
         <button class="card-btn danger" style="padding:0.3rem 0.6rem" onclick="eliminarItem(${item.id})">✕</button>
