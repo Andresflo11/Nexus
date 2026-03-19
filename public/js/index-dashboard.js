@@ -94,11 +94,19 @@ function renderStats(items) {
         a.style.borderColor = `${cfg.color}30`; // borde con el color de la categoría, semitransparente
 
         a.innerHTML = `
-            <div class="stat-card-icon">${tipoSVG(tipo, 32)}</div>
-            <div class="stat-card-num" style="color:${cfg.color}">${lista.length}</div>
-            <div class="stat-card-label">${cfg.label.slice(2)}</div>
-            ${comp ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.25rem;font-family:'JetBrains Mono',monospace">${comp} completados</div>` : ""}
-        `;
+    <div class="stat-card-top" style="background:${cfg.color}25;transition:background 0.2s"></div>
+    <div class="stat-card-icon">${tipoSVG(tipo, 32)}</div>
+    <div class="stat-card-num" style="color:${cfg.color}">${lista.length}</div>
+    <div class="stat-card-label">${cfg.label}</div>
+    ${comp ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.25rem;font-family:'JetBrains Mono',monospace">${comp} completados</div>` : ""}
+`;
+
+a.addEventListener("mouseenter", () => {
+  a.querySelector(".stat-card-top").style.background = `${cfg.color}60`;
+});
+a.addEventListener("mouseleave", () => {
+ a.querySelector(".stat-card-top").style.background = `${cfg.color}25`;
+});
         grid.appendChild(a);
     });
 }

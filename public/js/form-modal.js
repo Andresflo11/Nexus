@@ -64,6 +64,7 @@ function cambiarTipoFormModal(nuevoTipo) {
 }
 
 function buildFormModalCampos(t) {
+    temporadaContador = 0;
     const cfg      = CONFIG[t];
     const color    = cfg.color ?? "#888";
     const form     = document.getElementById("form-modal-campos");
@@ -105,11 +106,17 @@ function buildFormModalCampos(t) {
     }
 
     if (cfg.usaEpisodios) {
-        add(`<div class="number-wrap"><input type="number" name="temporadasTotal" placeholder="Num. temporadas" min="1"></div>
-             <input type="text" name="capitulosPorTemporada" placeholder="Caps por temporada (ej: 12,24,13)">
-             <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual" min="1"></div>
-             <div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
-    }
+    add(`<div style="grid-column:1/-1">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales</label>
+        <div id="temporadas-container-new"></div>
+        <button type="button" data-action="add-temporada"
+            style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir temporada / OVA
+        </button>
+    </div>
+    <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
+    <div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
+}
 
     if (cfg.usaTomos) {
         add(`<div style="grid-column:1/-1">
@@ -162,6 +169,11 @@ function buildFormModalCampos(t) {
     </button>`);
 
     form.onsubmit = (e) => guardarFormModal(e, t);
+    setTimeout(() => {
+    document.getElementById("temporadas-container-new");
+    const btnTemp = document.querySelector("#form-modal-campos button[data-action='add-temporada']");
+    if (btnTemp) btnTemp.addEventListener("click", () => agregarFilaTemporada('new'));
+}, 0);
 }
 
 async function guardarFormModal(e, t) {
@@ -183,13 +195,12 @@ async function guardarFormModal(e, t) {
     if (cfg.usaEstadoSerie)  nuevo.estadoSerie = form.estadoSerie?.value || null;
 
     if (cfg.usaEpisodios) {
-        const caps = (form.capitulosPorTemporada?.value ?? "").split(",").map(c => parseInt(c.trim())).filter(n => !isNaN(n));
-        nuevo.temporadas = caps.map((c, i) => ({ numero: i + 1, capitulos: c }));
-        nuevo.progreso   = {
-            temporada: parseInt(form.temporadaActual?.value)  || 1,
-            capitulo:  parseInt(form.capituloActualEp?.value) || 0
-        };
-    }
+    nuevo.temporadas = leerTemporadasDelForm();
+    nuevo.progreso   = {
+        temporada: parseInt(form.querySelector('[name="temporadaActual"]')?.value)  || 1,
+        capitulo:  parseInt(form.querySelector('[name="capituloActualEp"]')?.value) || 0
+    };
+}
 
     if (cfg.usaTomos) {
         nuevo.tomos         = leerTomosDeLForm();

@@ -52,16 +52,22 @@ form.setAttribute("autocomplete", "off");
     add(`<select name="logros">${opts}</select>`);
     }
     if (config.usaEpisodios) {
-        add(`<div class="number-wrap"><input type="number" name="temporadasTotal" placeholder="Num. temporadas" min="1"></div>
-             <input type="text" name="capitulosPorTemporada" placeholder="Caps por temporada (ej: 12,24,13)">
-             <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual" min="1"></div>
-             <div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
+        add(`<div style="grid-column:1/-1">
+    <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales</label>
+    <div id="temporadas-container-inline"></div>
+<button type="button" onclick="agregarFilaTemporada('inline')"
+        style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+        + Añadir temporada / OVA
+    </button>
+</div>
+<div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
+<div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
     }
     if (config.usaTomos) {
     add(`<div style="grid-column:1/-1">
         <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Tomos</label>
-        <div id="tomos-container-new"></div>
-        <button type="button" onclick="agregarFilaTomo('new')"
+        <div id="tomos-container-inline"></div>
+        <button type="button" onclick="agregarFilaTomo('inline')"
             style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
             + Añadir tomo
         </button>
@@ -106,13 +112,12 @@ function agregarItem(e) {
     if (config.usalogros) nuevo.logros = form.logros?.value ?? 'No tiene logros';
 
     if (config.usaEpisodios) {
-        const caps = (form.capitulosPorTemporada?.value ?? "").split(",").map(c => parseInt(c.trim())).filter(n => !isNaN(n));
-        nuevo.temporadas = caps.map((c, i) => ({ numero: i + 1, capitulos: c }));
-        nuevo.progreso   = {
-            temporada: parseInt(form.temporadaActual?.value)  || 1,
-            capitulo:  parseInt(form.capituloActualEp?.value) || 0
-        };
-    }
+    nuevo.temporadas = leerTemporadasDelForm();
+    nuevo.progreso   = {
+        temporada: parseInt(form.temporadaActual?.value)  || 1,
+        capitulo:  parseInt(form.capituloActualEp?.value) || 0
+    };
+}
     if (config.usaEstadoSerie) nuevo.estadoSerie     = form.estadoSerie?.value || null;
     if (config.usaCapitulos) {
         nuevo.capitulosTotales = parseInt(form.capitulosTotales?.value) || null;
@@ -188,11 +193,32 @@ function activarEdicionEnModal(id) {
         </div>`;
     }
     if (config.usaEpisodios && item.temporadas) {
-        extra += `
-        <input type="text" id="input-capitulosPorTemporada-${id}" placeholder="Caps/temporada (ej: 12,24)" value="${item.temporadas.map(t => t.capitulos).join(",")}">
-        <div class="number-wrap"><input type="number" id="input-temporadaActual-${id}" placeholder="Temporada actual" value="${item.progreso?.temporada ?? 1}"></div>
-        <div class="number-wrap"><input type="number" id="input-capituloActual-${id}" placeholder="Capítulo actual" value="${item.progreso?.capitulo ?? 0}"></div>`;
-    }
+        const temp = Array.isArray(item.temporadas) ? item.temporadas : [];
+    temporadaContador = temp.length;
+    const tempRows = temp.map((t, i) => `
+        <div id="temporada-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem">
+            <select id="temp-tipo-${i}" style="flex-shrink:0;width:120px">
+                <option value="normal"  ${(t.tipo ?? "normal") === "normal"   ? "selected" : ""}>Temporada</option>
+                <option value="ova"     ${t.tipo === "ova"     ? "selected" : ""}>OVA</option>
+                <option value="especial"${t.tipo === "especial"? "selected" : ""}>Especial</option>
+            </select>
+            <input type="number" id="temp-caps-${i}" value="${t.capitulos ?? ""}" placeholder="Nº caps" min="1" style="flex:1">
+            <button type="button" onclick="eliminarFilaTemporada(${i})"
+                style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>
+        </div>`).join("");
+
+    extra += `
+        <div style="grid-column:1/-1;margin-top:0.5rem">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales</div>
+            <div id="temporadas-container">${tempRows}</div>
+            <button type="button" onclick="agregarFilaTemporada('edit')"
+                style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+                + Añadir temporada / OVA
+            </button>
+        </div>
+        <input type="number" id="input-temporada-actual-${id}" value="${item.progreso?.temporada ?? 1}" placeholder="Temporada actual (índice)">
+        <input type="number" id="input-capitulo-actual-ep-${id}" value="${item.progreso?.capitulo ?? 0}" placeholder="Capítulo actual">`;
+}
     if (config.usaTomos) {
     const tomos = Array.isArray(item.tomos) ? item.tomos : [];
     tomoContador = tomos.length;
@@ -283,14 +309,12 @@ function guardarEdicionCompleta(id) {
     if (config.usalogros)
         actualizado.logros = document.getElementById(`input-logros-${id}`)?.value ?? 'No tiene logros';
     if (config.usaEpisodios) {
-        const caps = (document.getElementById(`input-capitulosPorTemporada-${id}`)?.value ?? "")
-            .split(",").map(c => parseInt(c.trim())).filter(n => !isNaN(n));
-        actualizado.temporadas = caps.map((c, i) => ({ numero: i + 1, capitulos: c }));
-        actualizado.progreso   = {
-            temporada: parseInt(document.getElementById(`input-temporadaActual-${id}`)?.value) || 1,
-            capitulo:  parseInt(document.getElementById(`input-capituloActual-${id}`)?.value)  || 0
-        };
-    }
+    actualizado.temporadas = leerTemporadasDelForm();
+    actualizado.progreso   = {
+        temporada: parseInt(document.getElementById(`input-temporada-actual-${id}`)?.value) || 1,
+        capitulo:  parseInt(document.getElementById(`input-capitulo-actual-ep-${id}`)?.value) || 0
+    };
+}
     if (config.usaTomos) actualizado.tomos = leerTomosDeLForm();
     if (config.usaEstadoSerie)
         actualizado.estadoSerie = document.getElementById(`estadoSerie-${id}`)?.value || null;
@@ -343,9 +367,11 @@ function parchearCard(id) {
 
     // Estado + plataforma + logros en un solo innerHTML
     const metaEl = card.querySelector(".card-meta");
-    if (metaEl) metaEl.innerHTML = `
-        <span class="card-tag tag-estado">${esc(item.estado)}</span>
-        ${item.plataforma ? `<span class="card-tag tag-plataforma">${esc(item.plataforma)}</span>` : ""}`;
+    const color = config.color ?? "#888";
+if (metaEl) metaEl.innerHTML = `
+    <span class="card-tag tag-estado">${esc(item.estado)}</span>
+    ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
+    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
 
     if (config.usalogros) {
         const tieneLogros = item.logros == 1 || item.logros === true;
@@ -418,8 +444,9 @@ function parchearCardEstado(id) {
 
     const metaEl = card.querySelector(".card-meta");
     if (metaEl) metaEl.innerHTML = `
-        <span class="card-tag tag-estado">${esc(item.estado)}</span>
-        ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">📺 ${esc(item.plataforma)}</span>` : ""}`;
+    <span class="card-tag tag-estado">${esc(item.estado)}</span>
+    ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
+    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
 }
 
 // ── Abrir modal de confirmación para borrar ───────────────
@@ -480,6 +507,10 @@ function wrapNumbers() {
 let dlcContador = 0;
 
 function agregarFilaDlc() {
+    const cfg = (typeof formModalTipoActual !== "undefined" && formModalTipoActual)
+        ? CONFIG[formModalTipoActual]
+        : config;
+
     const container = document.getElementById("dlcs-container");
     const i = dlcContador++;
     const div = document.createElement("div");
@@ -488,13 +519,13 @@ function agregarFilaDlc() {
     div.innerHTML = `
         <input type="text" id="dlc-nombre-${i}" placeholder="Nombre del DLC">
         <select id="dlc-tipo-${i}">
-            ${config.tiposDlc.map(t => `<option>${t}</option>`).join("")}
+            ${cfg.tiposDlc.map(t => `<option>${t}</option>`).join("")}
         </select>
         <select id="dlc-estado-${i}">
-            ${config.estadosDlc.map(e => `<option>${e}</option>`).join("")}
+            ${cfg.estadosDlc.map(e => `<option>${e}</option>`).join("")}
         </select>
         <select id="dlc-logros-${i}">
-            ${config.opcionesLogros.map(o => `<option>${o}</option>`).join("")}
+            ${cfg.opcionesLogros.map(o => `<option>${o}</option>`).join("")}
         </select>
         <button type="button" onclick="eliminarFilaDlc(${i})" style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>`;
     container.appendChild(div);
@@ -525,7 +556,11 @@ function leerDlcsDelForm() {
 let tomoContador = 0;
 
 function agregarFilaTomo(modo) {
-    const container = document.getElementById(modo === "edit" ? "tomos-container" : "tomos-container-new");
+    const container = document.getElementById(
+    modo === "edit"   ? "tomos-container" :
+    modo === "inline" ? "tomos-container-inline" :
+                        "tomos-container-new"
+);
     const i         = tomoContador++;
     const numero    = i + 1;
     const div       = document.createElement("div");
@@ -544,9 +579,10 @@ function eliminarFilaTomo(i) {
 }
 
 function leerTomosDeLForm() {
-    const container = document.getElementById("tomos-container") 
+    const container = document.getElementById("tomos-container")
+                   ?? document.getElementById("tomos-container-inline")
                    ?? document.getElementById("tomos-container-new");
-    if (!container) return null;
+    if (!container) return [];
     const tomos = [];
     container.querySelectorAll("[id^='tomo-inicio-']").forEach(input => {
         const i      = input.id.split("-").pop();
@@ -556,4 +592,60 @@ function leerTomosDeLForm() {
         tomos.push({ numero: tomos.length + 1, capituloInicio: inicio, capituloFin: fin });
     });
     return tomos.length ? tomos : null;
+}
+
+let temporadaContador = 0;
+
+function agregarFilaTemporada(modo) {
+    const container = document.getElementById(
+    modo === "edit"   ? "temporadas-container" :
+    modo === "inline" ? "temporadas-container-inline" :
+                        "temporadas-container-new"
+);
+    if (!container) return;
+
+    const i   = temporadaContador++;
+    const div = document.createElement("div");
+    div.id    = `temporada-row-${i}`;
+    div.style.cssText = "display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem";
+    div.innerHTML = `
+        <select id="temp-tipo-${i}" style="flex-shrink:0;width:120px">
+            <option value="normal">Temporada</option>
+            <option value="ova">OVA</option>
+            <option value="especial">Especial</option>
+        </select>
+        <input type="number" id="temp-caps-${i}" placeholder="Nº caps" min="1" style="flex:1">
+        <button type="button" onclick="eliminarFilaTemporada(${i})"
+            style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>`;
+    container.appendChild(div);
+}
+
+function eliminarFilaTemporada(i) {
+    document.getElementById(`temporada-row-${i}`)?.remove();
+}
+
+function leerTemporadasDelForm() {
+    const container = document.getElementById("temporadas-container")      // edición modal
+                   ?? document.getElementById("temporadas-container-inline") // formulario inline
+                   ?? document.getElementById("temporadas-container-new");   // modal universal
+    if (!container) return null;
+
+    const contadores = { normal: 0, ova: 0, especial: 0 };
+    const temporadas = [];
+
+    container.querySelectorAll("[id^='temp-caps-']").forEach(input => {
+        const i       = input.id.split("-").pop();
+        const caps    = parseInt(input.value);
+        const tipoSel = document.getElementById(`temp-tipo-${i}`)?.value ?? "normal";
+        if (isNaN(caps) || caps < 1) return;
+
+        contadores[tipoSel]++;
+        temporadas.push({
+            numero:    contadores[tipoSel],
+            capitulos: caps,
+            tipo:      tipoSel
+        });
+    });
+
+    return temporadas.length ? temporadas : null;
 }

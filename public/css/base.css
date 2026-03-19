@@ -134,6 +134,20 @@ body::before {
 
 .fmc-cat-btn:hover { border-color: var(--border2); color: var(--text); }
 
+.stat-card-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 12px 12px 0 0;
+}
+
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
 
 /* ── Animación de entrada (usada en cards) ────────────── */
 @keyframes fadeUp {

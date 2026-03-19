@@ -59,7 +59,12 @@ function renderCard(item, idx) {
             .reduce((s, t) => s + t.capitulos, 0) + (item.progreso.capitulo ?? 0);
         const pct = totalCaps ? Math.min(100, Math.round((capActual / totalCaps) * 100)) : 0;
         progreso = `
-            <div class="progress-info">T${item.progreso.temporada} · Ep ${item.progreso.capitulo}</div>
+            <div class="progress-info">${(() => {
+    const t = item.temporadas[item.progreso.temporada - 1];
+    return t?.tipo === "ova"      ? `OVA ${t.numero}`
+         : t?.tipo === "especial" ? `ESP ${t.numero}`
+         : `T${item.progreso.temporada}`;
+})()} · Ep ${item.progreso.capitulo}</div>
             <div class="progress-wrap" style="--pct:${pct}%"><div class="progress-fill" style="background:${color}"></div></div>
             <div class="progress-btns">
                 <button class="prog-btn" onclick="cambiarEpisodio(${item.id}, -1)"style="color:#6b7280"onmouseenter="this.style.background='${color}30';this.style.borderColor='${color}';this.style.color='#fff'"onmouseleave="this.style.background='';this.style.borderColor='';this.style.color='#6b7280'">−</button>
@@ -123,7 +128,13 @@ function renderListItem(item, idx) {
 
     let extra = "";
     if (config.usaEpisodios && item.progreso)
-        extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · T${item.progreso.temporada}E${item.progreso.capitulo}</span>`;
+        extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${(() => {
+    const t = item.temporadas[item.progreso.temporada - 1];
+    const label = t?.tipo === "ova"      ? `OVA ${t.numero}`
+                : t?.tipo === "especial" ? `ESP ${t.numero}`
+                : `T${item.progreso.temporada}`;
+    return ` · ${label}E${item.progreso.capitulo}`;
+})()}</span>`;
     if (config.usaCapitulos && item.capitulosTotales)
         extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · Cap ${item.capituloActual}/${item.capitulosTotales}</span>`;
     if (config.usaPaginas && item.paginasTotales)
@@ -207,18 +218,18 @@ function mostrarPorAño(lista) {
     });
 
     contenedor.className = "";
-    contenedor.innerHTML = claves.map(año => `
-        <div class="año-grupo">
-            <div class="año-separador">
-                <div class="año-linea"></div>
-                <span class="año-label">${año}</span>
-                <div class="año-linea"></div>
-                <span class="año-count">${grupos[año].length}</span>
-            </div>
-            <div class="media-grid">
-                ${grupos[año].map((item, i) => renderCard(item, i)).join("")}
-            </div>
-        </div>`).join("");
+contenedor.innerHTML = claves.map(año => `
+    <div class="año-grupo">
+        <div class="año-separador">
+            <div class="año-linea"></div>
+            <span class="año-label">${año}</span>
+            <div class="año-linea"></div>
+            <span class="año-count">${grupos[año].length}</span>
+        </div>
+        <div class="${vistaActual === "list" ? "media-list" : "media-grid"}">
+            ${grupos[año].map((item, i) => vistaActual === "list" ? renderListItem(item, i) : renderCard(item, i)).join("")}
+        </div>
+    </div>`).join("");
 }
 
 // ── Filtrar + ordenar + mostrar ───────────────────────────

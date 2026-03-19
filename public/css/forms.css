@@ -624,6 +624,21 @@ input[type="number"] {
 .dp-año-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
 .dp-año-btn.sel   { border-color: var(--accent); color: var(--accent); }
 
+/* Campo con label */
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.form-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
 /* ── Búsqueda responsive ────────────────────────────────*/
 @media (max-width: 480px) {
   .search-wrap input[type="search"] { width: 160px; }

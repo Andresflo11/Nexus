@@ -374,9 +374,14 @@ function meActualizarEpisodios(color = config.color) {
         .reduce((s, t) => s + t.capitulos, 0) + item.progreso.capitulo;
     const pct = totalCaps ? Math.min(100, Math.round((capActual / totalCaps) * 100)) : 0;
 
-    document.getElementById("me-progreso-texto").textContent =
-        `T${item.progreso.temporada} · Ep ${item.progreso.capitulo} — ${pct}% total`;
-    document.getElementById("me-ep-num").textContent = `Ep ${item.progreso.capitulo}`;
+    const tempActual = item.temporadas[item.progreso.temporada - 1];
+const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
+                 : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
+                 : `T${item.progreso.temporada}`;
+document.getElementById("me-progreso-texto").textContent = `${labelTemp} · Ep ${item.progreso.capitulo} — ${pct}%`;
+
+const numEl = document.getElementById("me-ep-num");
+if (numEl) numEl.textContent = `Ep ${item.progreso.capitulo}`;
 
     const barra = document.getElementById("me-barra-ep");
     barra.style.width      = `${pct}%`;
@@ -388,13 +393,15 @@ function meRenderTabs(color = config.color) {
     const item     = meItemActual;
     const tabsEl   = document.getElementById("me-tabs");
     const tabIndex = Math.max(0, Math.min(meTabActual, item.temporadas.length - 1));
-
-    tabsEl.innerHTML = item.temporadas.map((t, i) => `
-        <button class="me-tab ${i === tabIndex ? "active" : ""}"
-                style="${i === tabIndex ? `background:${color};color:#000;border-color:${color}` : ""}"
-                onclick="meCambiarTab(${i})">
-            T${t.numero}
-        </button>`).join("");
+const tabsHTML = item.temporadas.map((t, i) => {
+    const label = t.tipo === "ova"      ? `OVA ${t.numero}`
+                : t.tipo === "especial" ? `ESP ${t.numero}`
+                : `T${t.numero}`;
+    return `<button type="button" class="me-tab ${i === meTabActual ? "activo" : ""}"
+        style="${i === meTabActual ? `background:${color};border-color:${color};color:#000` : ""}"
+        onclick="meCambiarTab(${i})">${label}</button>`;
+}).join("");
+tabsEl.innerHTML = tabsHTML;
 
     meRenderTabContenido(color);
 }
@@ -405,9 +412,9 @@ function meRenderTabContenido(color = config.color) {
     const contEl   = document.getElementById("me-tab-contenido");
     const tabIndex = Math.max(0, Math.min(meTabActual, item.temporadas.length - 1));
     const temp     = item.temporadas[tabIndex];
-    const esCurrent  = item.progreso.temporada === temp.numero;
+    const esCurrent  = item.progreso.temporada - 1 === tabIndex;
     const capsVistas = esCurrent ? item.progreso.capitulo
-                      : item.progreso.temporada > temp.numero ? temp.capitulos : 0;
+                 : item.progreso.temporada - 1 > tabIndex ? temp.capitulos : 0;
     const pctTemp    = temp.capitulos ? Math.round((capsVistas / temp.capitulos) * 100) : 0;
 
     const barraTemp = contEl.querySelector(".me-barra-temp");
@@ -432,7 +439,11 @@ function meRenderTabContenido(color = config.color) {
     contEl.innerHTML = `
         <div class="me-temp-info">
             <div class="me-temp-header">
-                <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px">TEMPORADA ${temp.numero}</span>
+                <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px">TEMPORADA ${
+    temp.tipo === "ova"      ? `OVA ${temp.numero}` :
+    temp.tipo === "especial" ? `Especial ${temp.numero}` :
+    `Temporada ${temp.numero}`
+}</span>
                 <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted)">${temp.capitulos} capítulos</span>
             </div>
             <div class="progress-wrap" style="margin:0.5rem 0">
@@ -448,7 +459,7 @@ function meRenderTabContenido(color = config.color) {
                                  title="Ep ${n}">${n}</div>`;
                 }).join("")}
             </div>
-            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← Temporada actual</p>` : ""}
+            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← ${temp.tipo === "ova" ? "OVA actual" : temp.tipo === "especial" ? "Especial actual" : "Temporada actual"}</p>` : ""}
         </div>`;
 }
 
@@ -516,11 +527,12 @@ function cambiarEpisodio(id, delta) {
     }
 
     item.progreso = { temporada, capitulo };
-    actualizarItemSilencioso(item);
-    parchearProgresoEpisodio(id);
-    // Actualizar dataOriginal
+actualizarItemSilencioso(item);
+// Actualizar dataOriginal PRIMERO
 const idx = dataOriginal.findIndex(i => i.id === id);
 if (idx !== -1) dataOriginal[idx].progreso = item.progreso;
+// Luego parchar el DOM
+parchearProgresoEpisodio(id);
 
 // Si el modal está abierto con este item, actualizar UI
 if (meItemActual?.id === id) {
@@ -563,7 +575,11 @@ function parchearProgresoEpisodio(id) {
         .reduce((s, t) => s + t.capitulos, 0) + item.progreso.capitulo;
     const pct = totalCaps ? Math.min(100, Math.round((capActual / totalCaps) * 100)) : 0;
 
-    card.querySelector(".progress-info").textContent = `T${item.progreso.temporada} · Ep ${item.progreso.capitulo}`;
+    const tempActual = item.temporadas[item.progreso.temporada - 1];
+const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
+                 : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
+                 : `T${item.progreso.temporada}`;
+card.querySelector(".progress-info").textContent = `${labelTemp} · Ep ${item.progreso.capitulo}`;
     card.querySelector(".progress-wrap").style.setProperty("--pct", `${pct}%`);
     card.querySelector(".prog-num").textContent = `Ep ${item.progreso.capitulo}`;
 }
