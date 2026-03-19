@@ -1,33 +1,101 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Mi Ocio Personal</title>
-     <link rel="stylesheet" href="css/style.css">
-    </head>
-    <body>
-        <header>
-            <a href="../index.html"><h1>Mi Ocio Personal</h1></a>
-        <nav>
-        <nav>
-            <ul>
-            <li><a href="pages/categoria.html?tipo=juegos">Juegos</a></li>
-            <li><a href="pages/categoria.html?tipo=animes">Animes</a></li>
-            <li><a href="pages/categoria.html?tipo=peliculas">Peliculas</a></li>
-            <li><a href="pages/categoria.html?tipo=series">Series</a></li>
-            <li><a href="pages/categoria.html?tipo=comics">Comics</a></li>
-            <li><a href="pages/categoria.html?tipo=libros">Libros</a></li>
-            <li><a href="pages/categoria.html?tipo=mangas">Mangas</a></li>
-            </ul>  
-        </nav>
-    </Header>
-    <main>
-        <div class="buscador-container">
-            <input type="text" id="buscadorGlobal" placeholder="Buscar juegos, series, libros...">
-        </div>
-        <div id="resultadosBusqueda"></div>
-    </main>
-<script src="../js/busquedaGlobal.js"></script>
-    </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — Tu Universo Media</title>
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">NEXUS<span>.</span></div>
+  <div class="header-stats">
+    <div class="header-stat"><strong id="total-count">0</strong>ELEMENTOS</div>
+    <div class="header-stat"><strong id="categorias-count">0</strong>CATEGORÍAS</div>
+    <div class="header-stat"><strong id="avg-rating">—</strong>RATING MEDIO</div>
+  </div>
+  <div class="header-actions">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" id="buscadorGlobal" placeholder="Buscar en todo...">
+      <div id="resultadosBusqueda" class="search-results"></div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="section-label">Navegar</div>
+    <a class="platform-btn active" href="/">
+      <span class="platform-dot" style="background:var(--accent)"></span>
+      Inicio
+    </a>
+
+    <div class="section-label">Categorías</div>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=juegos">
+      <span class="platform-dot" style="background:#7c5cfc"></span>
+      🎮 Juegos
+      <span class="platform-count" id="cnt-juegos">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=peliculas">
+      <span class="platform-dot" style="background:#ed1c24"></span>
+      🎬 Películas
+      <span class="platform-count" id="cnt-peliculas">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=series">
+      <span class="platform-dot" style="background:#00c030"></span>
+      📺 Series
+      <span class="platform-count" id="cnt-series">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=animes">
+      <span class="platform-dot" style="background:#2e51a2"></span>
+      ⛩ Animes
+      <span class="platform-count" id="cnt-animes">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=mangas">
+      <span class="platform-dot" style="background:#e91e63"></span>
+      📕 Mangas
+      <span class="platform-count" id="cnt-mangas">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=comics">
+      <span class="platform-dot" style="background:#ff6b35"></span>
+      💥 Cómics
+      <span class="platform-count" id="cnt-comics">—</span>
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=libros">
+      <span class="platform-dot" style="background:#c8a85e"></span>
+      📚 Libros
+      <span class="platform-count" id="cnt-libros">—</span>
+    </a>
+  </aside>
+
+  <main>
+    <section class="hero-section">
+      <h1 class="hero-title">Tu universo<br><span>media personal</span></h1>
+      <p class="hero-sub">Lleva el registro de todo lo que consumes: juegos, series, películas, anime, manga, cómics y libros en un solo lugar.</p>
+    </section>
+
+    <!-- Stats grid -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Recent items -->
+    <div class="section-header" style="margin-top:2.5rem">
+      <h2>AÑADIDO RECIENTEMENTE</h2>
+      <span class="count" id="recent-count"></span>
+    </div>
+    <div class="media-grid" id="recent-grid"></div>
+
+    <!-- Top rated -->
+    <div class="section-header" style="margin-top:2.5rem">
+      <h2>LO MEJOR VALORADO</h2>
+    </div>
+    <div class="media-grid" id="top-grid"></div>
+  </main>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/busquedaGlobal.js"></script>
+<script src="/js/index-dashboard.js"></script>
+</body>
 </html>

@@ -1,56 +1,122 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Categoria</title>
-     <link rel="stylesheet" href="../css/style.css">
-    </head>
-    <body>
-        <header>
-            <a href="../index.html"><h1 id="titulo-categoria"></h1></a>
-        <nav>
-        <nav>
-            <ul>
-            <li><a href="../index.html">Inicio</a></li>
-            <li><a href="categoria.html?tipo=juegos">Juegos</a></li>
-            <li><a href="categoria.html?tipo=animes">Animes</a></li>
-            <li><a href="categoria.html?tipo=peliculas">Peliculas</a></li>
-            <li><a href="categoria.html?tipo=series">Series</a></li>
-            <li><a href="categoria.html?tipo=comics">Comics</a></li>
-            <li><a href="categoria.html?tipo=libros">Libros</a></li>
-            <li><a href="categoria.html?tipo=mangas">Mangas</a></li>
-            </ul>  
-        </nav>
-    </Header>
-    <main>
-        <section class="formulario">
-            <button id="toggle-form">Agregar nuevo</button>
-            <div id="form-container" class="oculto">
-            <h2>Nuevo elemento</h2>
-            <form id="formulario"></form>
-            </div>
-        </section>
-        <div class="filtros" id="filtros"></div>
-        <section class="lista" id="lista">
-            <!-- Aquí JavaScript va a insertar los juegos -->
-        </section>
-    </main>
-    <div id="modal-edicion" class="modal oculto">
-        <div class="modal-contenido" id="modal-contenido">
-        </div>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — Categoría</title>
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<header>
+  <div class="logo"><a href="/" style="text-decoration:none;color:inherit">NEXUS<span>.</span></a></div>
+  <div class="header-stats">
+    <div class="header-stat"><strong id="total-count">0</strong>EN ESTA LISTA</div>
+    <div class="header-stat"><strong id="avg-rating-header">—</strong>RATING MEDIO</div>
+    <div class="header-stat"><strong id="completados-count">0</strong>COMPLETADOS</div>
+  </div>
+  <div class="header-actions">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" id="buscadorGlobal" placeholder="Buscar en todo...">
+      <div id="resultadosBusqueda" class="search-results"></div>
     </div>
-    <div id="modalConfirmacion" class="modal oculto">
-        <div class="modal-contenido">
-            <p>¿Estás seguro de que quieres eliminar este item?</p>
-            <div class="modal-butones">
-            <button id="btnConfirmar">Sí, eliminar</button>
-            <button id="btnCancelar">No, cancelar</button>
-            </div>
-        </div>
+    <button class="cta-btn" id="toggle-form">+ Añadir</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="section-label">Navegar</div>
+    <a class="platform-btn" href="/">
+      <span class="platform-dot" style="background:var(--accent)"></span>
+      ← Inicio
+    </a>
+
+    <div class="section-label">Categorías</div>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=juegos">
+      <span class="platform-dot" style="background:#7c5cfc"></span>🎮 Juegos
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=peliculas">
+      <span class="platform-dot" style="background:#ed1c24"></span>🎬 Películas
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=series">
+      <span class="platform-dot" style="background:#00c030"></span>📺 Series
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=animes">
+      <span class="platform-dot" style="background:#2e51a2"></span>⛩ Animes
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=mangas">
+      <span class="platform-dot" style="background:#e91e63"></span>📕 Mangas
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=comics">
+      <span class="platform-dot" style="background:#ff6b35"></span>💥 Cómics
+    </a>
+    <a class="platform-btn" href="/pages/categoria.html?tipo=libros">
+      <span class="platform-dot" style="background:#c8a85e"></span>📚 Libros
+    </a>
+
+    <div class="section-label" style="margin-top:1.5rem">Filtrar por estado</div>
+    <div id="filtros"></div>
+
+    <div class="section-label" style="margin-top:1.5rem">Ordenar</div>
+    <select id="sort-select" onchange="aplicarOrden()" style="width:100%;padding:0.5rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;">
+      <option value="reciente">Más reciente</option>
+      <option value="rating-desc">Mayor rating</option>
+      <option value="rating-asc">Menor rating</option>
+      <option value="titulo">A – Z</option>
+    </select>
+
+    <div class="section-label" style="margin-top:1.5rem">Vista</div>
+    <div class="view-toggle" style="width:100%">
+      <button class="view-btn active" id="grid-btn" onclick="setView('grid')" style="flex:1">⊞ Grid</button>
+      <button class="view-btn" id="list-btn" onclick="setView('list')" style="flex:1">☰ Lista</button>
     </div>
+  </aside>
+
+  <main>
+    <div class="section-header">
+      <h2 id="titulo-categoria">CARGANDO...</h2>
+      <span class="count" id="showing-count"></span>
     </div>
-    <script src="../js/config.js"></script>
-    <script src="../js/categoria.js"></script>
-    </body>
+
+    <!-- Formulario de añadir -->
+    <div id="form-container" class="form-panel oculto">
+      <h3 class="form-title">Añadir nuevo elemento</h3>
+      <form id="formulario" class="form-grid"></form>
+    </div>
+
+    <!-- Lista/Grid de items -->
+    <div id="lista"></div>
+  </main>
+</div>
+
+<!-- Modal confirmación eliminar -->
+<div class="modal-overlay oculto" id="modalConfirmacion">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:1rem">🗑</div>
+    <h3 style="font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:2px;margin-bottom:0.5rem">CONFIRMAR ELIMINACIÓN</h3>
+    <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.5rem">Esta acción no se puede deshacer. ¿Estás seguro?</p>
+    <div style="display:flex;gap:0.75rem;justify-content:center">
+      <button id="btnCancelar" class="link-btn" style="padding:0.6rem 1.5rem">Cancelar</button>
+      <button id="btnConfirmar" class="cta-btn" style="background:#ef4444;border-color:#ef4444">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición -->
+<div class="modal-overlay oculto" id="modal-edicion">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">EDITAR ELEMENTO</span>
+      <button class="close-btn" onclick="cerrarModalEdicion()">✕</button>
+    </div>
+    <div id="modal-contenido" class="form-grid"></div>
+  </div>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/busquedaGlobal.js"></script>
+<script src="/js/categoria.js"></script>
+</body>
 </html>
