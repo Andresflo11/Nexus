@@ -53,6 +53,22 @@ function cargarItems() {
             actualizarHeader();
             crearFiltros();
             aplicarOrden();
+            setTimeout(() => {
+    const hash = window.location.hash;
+    if (hash) {
+        const card = document.querySelector(hash);
+        if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Resaltar brevemente la card
+            card.style.outline = `2px solid ${config.color}`;
+            card.style.outlineOffset = "3px";
+            setTimeout(() => {
+                card.style.outline = "";
+                card.style.outlineOffset = "";
+            }, 2000);
+        }
+    }
+}, 300);
         })
         .catch(err => console.error("Error al cargar items:", err));
 }
@@ -169,4 +185,20 @@ document.addEventListener("DOMContentLoaded", () => {
     meInnerHTMLOriginal = document.querySelector(".modal-expandido-inner").innerHTML;
 
     cargarItems();
+});
+
+window.addEventListener("hashchange", () => {
+    const hash = window.location.hash;
+    if (hash) {
+        const card = document.querySelector(hash);
+        if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.style.outline = `2px solid ${config.color}`;
+            card.style.outlineOffset = "3px";
+            setTimeout(() => {
+                card.style.outline = "";
+                card.style.outlineOffset = "";
+            }, 2000);
+        }
+    }
 });

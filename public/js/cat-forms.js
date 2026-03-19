@@ -18,7 +18,8 @@
 // Genera los campos según el tipo de categoría (config).
 function crearFormulario() {
     const form = document.getElementById("formulario");
-    form.innerHTML = "";
+form.innerHTML = "";
+form.setAttribute("autocomplete", "off");
 
     const add = (html) => { form.insertAdjacentHTML("beforeend", html); };
 

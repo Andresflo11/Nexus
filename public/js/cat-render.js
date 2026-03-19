@@ -284,4 +284,3 @@ function extraerAño(fecha) {
     const año = parseInt(fecha.split("-")[0]);
     return isNaN(año) ? 0 : año;
 }
-

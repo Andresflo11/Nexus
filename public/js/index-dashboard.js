@@ -43,14 +43,14 @@ function ordenarDashboard() {
     const sort = document.getElementById("sort-index")?.value ?? "reciente";
     let lista  = [...todosLosItems];
 
-    // Aplicar el criterio de ordenación seleccionado
-    if      (sort === "reciente")    lista.sort((a, b) => b.id - a.id);
+    if      (sort === "reciente")   lista.sort((a, b) => b.id - a.id);
     else if (sort === "rating-desc") lista.sort((a, b) => (b.valoracion ?? 0) - (a.valoracion ?? 0));
     else if (sort === "rating-asc")  lista.sort((a, b) => (a.valoracion ?? 0) - (b.valoracion ?? 0));
     else if (sort === "titulo")      lista.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    else if (sort === "categoria")   lista.sort((a, b) => TIPOS.indexOf(a.tipo) - TIPOS.indexOf(b.tipo));
 
-    renderRecientes(lista);
-    renderTopRated(lista);
+    renderEnProgreso(lista, sort === "categoria");
+    renderPausadosPendientes(lista, sort === "categoria");
 }
 
 // ── Contadores del header ─────────────────────────────────
@@ -94,7 +94,7 @@ function renderStats(items) {
         a.style.borderColor = `${cfg.color}30`; // borde con el color de la categoría, semitransparente
 
         a.innerHTML = `
-            <div class="stat-card-icon">${cfg.label.split(" ")[0]}</div>
+            <div class="stat-card-icon">${tipoSVG(tipo, 32)}</div>
             <div class="stat-card-num" style="color:${cfg.color}">${lista.length}</div>
             <div class="stat-card-label">${cfg.label.slice(2)}</div>
             ${comp ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.25rem;font-family:'JetBrains Mono',monospace">${comp} completados</div>` : ""}
@@ -103,38 +103,70 @@ function renderStats(items) {
     });
 }
 
-// ── Sección "Recientes" ───────────────────────────────────
-// Muestra los primeros 12 items de la lista ya ordenada.
-// Para cambiar cuántos se muestran: items.slice(0, 12)
-function renderRecientes(items) {
+// Estados activos por categoría
+const ESTADOS_ACTIVOS = ["Jugando", "Viendo", "Leyendo"];
+const ESTADOS_PAUSA   = ["Pausado", "Pendiente"];
+
+function renderConSeparadores(items) {
+    let html        = "";
+    let tipoActual  = null;
+    let idx         = 0;
+
+    items.forEach(item => {
+        if (item.tipo !== tipoActual) {
+            tipoActual = item.tipo;
+            const cfg  = CONFIG[item.tipo] ?? {};
+            html += `
+                <div style="grid-column:1/-1;display:flex;align-items:center;gap:0.75rem;margin-top:1.5rem;margin-bottom:0.25rem">
+                    ${tipoSVG(item.tipo, 18)}
+                    <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:${cfg.color}">${cfg.label.toUpperCase()}</span>
+                    <div style="flex:1;height:1px;background:${cfg.color}25"></div>
+                </div>`;
+        }
+        html += cardHTML(item, idx++);
+    });
+
+    return html;
+}
+
+// REEMPLAZA renderRecientes
+function renderEnProgreso(items, porCategoria = false) {
     const grid    = document.getElementById("recent-grid");
-    const recents = items.slice(0, 12); // ← cambia el 12 para mostrar más o menos
+    const activos = items.filter(i => ESTADOS_ACTIVOS.includes(i.estado));
 
-    document.getElementById("recent-count").textContent = `${recents.length} de ${items.length}`;
+    document.getElementById("recent-count").textContent = `${activos.length} elementos`;
 
-    grid.innerHTML = recents.length
-        ? recents.map((item, i) => cardHTML(item, i)).join("")
-        : `<div class="empty-state" style="grid-column:1/-1">
-               <div class="big-icon">🌌</div>
-               <h3>Vacío por aquí</h3>
-               <p>Empieza añadiendo elementos desde cualquier categoría.</p>
-           </div>`;
+    if (!activos.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+            <div class="big-icon">🎯</div>
+            <h3>Nada en progreso</h3>
+            <p>Empieza algo nuevo desde cualquier categoría.</p>
+        </div>`;
+        return;
+    }
+
+    grid.innerHTML = porCategoria
+        ? renderConSeparadores(activos)
+        : activos.map((item, i) => cardHTML(item, i)).join("");
 }
 
-// ── Sección "Mejor valorados" ─────────────────────────────
-// Muestra hasta 12 items con valoración ≥ 4.
-// Para cambiar el umbral de valoración: i.valoracion >= 4
-function renderTopRated(items) {
-    const grid = document.getElementById("top-grid");
-    const top  = items.filter(i => i.valoracion >= 4).slice(0, 12); // ← cambia 4 o 12
+function renderPausadosPendientes(items, porCategoria = false) {
+    const grid  = document.getElementById("top-grid");
+    const pausa = items.filter(i => ESTADOS_PAUSA.includes(i.estado));
 
-    grid.innerHTML = top.length
-        ? top.map((item, i) => cardHTML(item, i)).join("")
-        : `<div class="empty-state" style="grid-column:1/-1;padding:2rem">
-               <p style="font-size:0.875rem">Aún no hay elementos con valoración alta.</p>
-           </div>`;
+    if (!pausa.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:2rem">
+            <p style="font-size:0.875rem">No tienes elementos pausados ni pendientes.</p>
+        </div>`;
+        return;
+    }
+
+    grid.innerHTML = porCategoria
+        ? renderConSeparadores(pausa)
+        : pausa.map((item, i) => cardHTML(item, i)).join("");
 }
 
+// REEMPLAZA renderTopRated
 // ── HTML de una card del dashboard ───────────────────────
 // Mismo diseño que las cards de categoría pero sin botones de
 // editar/eliminar — al hacer click va a la categoría del item.
@@ -168,7 +200,7 @@ function cardHTML(item, idx) {
         <div class="card-title">${esc(item.titulo)}</div>
         <div class="card-meta">
          <span class="card-tag tag-estado">${esc(item.estado)}</span>
-           ${item.plataforma ? `<span class="card-tag tag-plataforma">📺 ${esc(item.plataforma)}</span>` : ""}
+           ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">📺 ${esc(item.plataforma)}</span>` : ""}
            ${cfg.usalogros ? `<span class="card-tag ${claseLogros(item.logros)}">${item.logros === "Todos completados" ? "🏆 " : ""}${item.logros ?? "No tiene logros"}</span>` : ""}
          </div>
         <div class="card-bottom"></div>
