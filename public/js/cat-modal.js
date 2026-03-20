@@ -115,10 +115,12 @@ function abrirModalExpandido(id) {
     const btnCompletar  = document.getElementById("me-btn-completar");
     const estadoComp    = config.estadosCompletados?.[0];
     const yaCompleto    = config.estadosCompletados?.includes(item.estado);
-    btnCompletar.textContent     = yaCompleto ? "✓ Completado" : `Marcar como ${estadoComp}`;
-    btnCompletar.style.background  = yaCompleto ? color : "transparent";
-    btnCompletar.style.color       = yaCompleto ? "#000" : color;
-    btnCompletar.style.borderColor = color;
+    if (btnCompletar) {
+        btnCompletar.textContent     = yaCompleto ? "✓ Completado" : `Marcar como ${estadoComp}`;
+        btnCompletar.style.background  = yaCompleto ? color : "transparent";
+        btnCompletar.style.color       = yaCompleto ? "#000" : color;
+        btnCompletar.style.borderColor = color;
+    }
 
     // Ocultar todas las secciones de progreso
     ["me-episodios","me-capitulos","me-paginas","me-tomos"].forEach(secId => {
@@ -184,6 +186,13 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
     if (config.usaPaginas && item.paginasTotales) {
         document.getElementById("me-paginas").classList.remove("oculto");
         meActualizarPaginas(color);
+    }
+
+    // Mostrar botón editar solo si es admin
+    const btnEditar = document.getElementById("btn-editar-modal");
+    if (btnEditar) {
+        const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        btnEditar.style.display = (_u && _u.rol === "admin") ? "" : "none";
     }
 
     // Animación de apertura

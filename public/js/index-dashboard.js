@@ -32,7 +32,15 @@ function actualizarItemSilencioso(item) {
 // cada función de render filtra lo que necesita.
 async function cargarDashboard() {
     try {
-        const res     = await fetch("/items");
+        const user    = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        const esAdmin = user && user.rol === "admin";
+
+        // Mostrar botón añadir solo al admin
+        const btnAnadir = document.getElementById("dash-btn-anadir");
+        if (btnAnadir) btnAnadir.style.display = esAdmin ? "" : "none";
+
+        const url     = (user && !esAdmin) ? `/mi-dashboard/${user.id}` : "/items";
+        const res     = await fetch(url);
         todosLosItems = await res.json();
 
         renderStats(todosLosItems);

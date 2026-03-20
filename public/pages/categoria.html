@@ -73,7 +73,7 @@
     </div>
 </div>
 
-    <button class="cta-btn" onclick="abrirFormModal(tipo)">+ Añadir</button>
+    <button class="cta-btn" id="btn-anadir-categoria" onclick="abrirFormModal(tipo)" style="display:none">+ Añadir</button>
   </div>
 </header>
 
@@ -198,7 +198,7 @@
             <option value="1">Pésimo</option>
             <option value="0">Sin valorar</option>
           </select>
-          <button class="me-btn-completar" id="me-btn-completar" onclick="meCompletarRapido()"></button>
+          <button class="me-btn-editar" id="btn-editar-modal" onclick="meAbrirEdicion()" style="display:none">✏ Editar todos los campos</button>
         </div>
       </div>
 
@@ -260,7 +260,7 @@
           </div>
         </div>
 
-        <button class="me-btn-editar" onclick="meAbrirEdicion()">✏ Editar todos los campos</button>
+        <button class="me-btn-editar" id="btn-editar-modal" onclick="meAbrirEdicion()" style="display:none">✏ Editar todos los campos</button>
       </div>
     </div>
   </div>
@@ -292,5 +292,7 @@
 <script src="/js/cat-forms.js"></script>
 <script src="/js/form-modal.js"></script>
 <script src="/js/cat-modal.js"></script>
+<script src="/js/auth-header.js"></script>
+<script src="/js/auth-header-html.js"></script>
 </body>
 </html>

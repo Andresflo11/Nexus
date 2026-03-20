@@ -39,36 +39,61 @@ let idAEliminar  = null;
 document.getElementById("titulo-categoria").textContent =
     config.label ? config.label.slice(2).toUpperCase() : tipo.toUpperCase();
 
+// ── Permisos según rol ────────────────────────────────────
+(function aplicarPermisos() {
+    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const esAdmin = user && user.rol === "admin";
+    const btnAnadir = document.getElementById("btn-anadir-categoria");
+    if (btnAnadir && esAdmin) btnAnadir.style.display = "";
+    window._esAdmin = esAdmin;
+})();
+
 document.querySelectorAll(".platform-btn").forEach(btn => {
     const href = btn.getAttribute("href") ?? "";
     btn.classList.toggle("active", href.includes(`tipo=${tipo}`));
 });
 
 // ── API: cargar todos los items ───────────────────────────
+// ── API: cargar todos los items ───────────────────────────
 function cargarItems() {
+    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+
+    function aplicarDatos(data) {
+        dataOriginal = data;
+        actualizarHeader();
+        crearFiltros();
+        aplicarOrden();
+        setTimeout(() => {
+            const hash = window.location.hash;
+            if (hash) {
+                const card = document.querySelector(hash);
+                if (card) {
+                    card.scrollIntoView({ behavior: "smooth", block: "center" });
+                    card.style.outline = `2px solid ${config.color}`;
+                    card.style.outlineOffset = "3px";
+                    setTimeout(() => {
+                        card.style.outline = "";
+                        card.style.outlineOffset = "";
+                    }, 2000);
+                }
+            }
+        }, 300);
+    }
+
     fetch(`/items/${tipo}`)
         .then(r => r.json())
-        .then(data => {
-            dataOriginal = data;
-            actualizarHeader();
-            crearFiltros();
-            aplicarOrden();
-            setTimeout(() => {
-    const hash = window.location.hash;
-    if (hash) {
-        const card = document.querySelector(hash);
-        if (card) {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            // Resaltar brevemente la card
-            card.style.outline = `2px solid ${config.color}`;
-            card.style.outlineOffset = "3px";
-            setTimeout(() => {
-                card.style.outline = "";
-                card.style.outlineOffset = "";
-            }, 2000);
-        }
-    }
-}, 300);
+        .then(todos => {
+            if (user && user.rol !== "admin") {
+                fetch(`/mi-dashboard/${user.id}`)
+                    .then(r => r.json())
+                    .then(misItems => {
+                        const misIds = new Set(misItems.map(i => i.id));
+                        aplicarDatos(todos.filter(i => misIds.has(i.id)));
+                    })
+                    .catch(() => aplicarDatos([]));
+            } else {
+                aplicarDatos(todos);
+            }
         })
         .catch(err => console.error("Error al cargar items:", err));
 }

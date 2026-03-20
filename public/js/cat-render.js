@@ -109,8 +109,9 @@ function renderCard(item, idx) {
         <div class="card-bottom">
           ${progreso}
           <div class="card-actions">
+            ${window._esAdmin ? `
             <button class="card-btn" onclick="abrirModalExpandido(${item.id});setTimeout(()=>meAbrirEdicion(),300)">✏ Editar</button>
-            <button class="card-btn danger" onclick="eliminarItem(${item.id})">✕</button>
+            <button class="card-btn danger" onclick="eliminarItem(${item.id})">✕</button>` : ""}
           </div>
         </div>
       </div>
@@ -152,8 +153,9 @@ function renderListItem(item, idx) {
       ${item.valoracion > 0 ? `<div class="list-rating" style="background:${valColor}20;color:${valColor}">${valoracionLabel(item.valoracion)}</div>` : ""}
       ${config.usalogros ? `<span title="Logros" style="font-size:0.85rem;color:${item.logros ? "#64dd17" : "var(--muted)"}"></span>` : ""}
       <div class="list-actions">
+        ${window._esAdmin ? `
         <button class="card-btn" style="padding:0.3rem 0.6rem" onclick="abrirModalExpandido(${item.id});setTimeout(()=>meAbrirEdicion(),300)">✏</button>
-        <button class="card-btn danger" style="padding:0.3rem 0.6rem" onclick="eliminarItem(${item.id})">✕</button>
+        <button class="card-btn danger" style="padding:0.3rem 0.6rem" onclick="eliminarItem(${item.id})">✕</button>` : ""}
       </div>
     </div>`;
 }

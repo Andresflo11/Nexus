@@ -74,12 +74,40 @@ function renderizar() {
     const dotColor = ESTADOS_COLOR[it.estado] || "#6b7280";
     const rating   = it.valoracion ? RATINGS[it.valoracion] || "" : "";
 
+    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const mostrarBtn = user && user.rol !== "admin";
+
+    const btnAgregar = document.createElement("button");
+    btnAgregar.className = "catidx-add-btn";
+    btnAgregar.title = "Agregar a mi dashboard";
+    btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+    btnAgregar.onclick = async (e) => {
+        e.stopPropagation();
+        const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        if (!user) { alert("Debes iniciar sesión para agregar items a tu dashboard"); return; }
+        try {
+            const res = await fetch("/mi-dashboard", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.id, itemId: it.id })
+            });
+            if (res.ok) {
+                btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+                btnAgregar.style.borderColor = "#22c55e40";
+                setTimeout(() => {
+                    btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+                    btnAgregar.style.borderColor = "";
+                }, 1500);
+            }
+        } catch { alert("Error al agregar"); }
+    };
+
     card.innerHTML = `
       <div class="catidx-poster">${posterHTML}</div>
       <div class="catidx-info">
         <div class="catidx-nombre">${it.titulo || "Sin título"}</div>
       </div>
     `;
+    if (mostrarBtn) card.appendChild(btnAgregar);
     grid.appendChild(card);
   });
 }

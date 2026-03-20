@@ -19,6 +19,10 @@ function renderHomeCategories(items) {
   const wrap = document.getElementById("home-categorias");
   wrap.innerHTML = "";
 
+  // Limpiar fondo blur para que no se duplique al recargar
+  const fondoBlur = document.getElementById("home-fondo-blur");
+  if (fondoBlur) fondoBlur.innerHTML = "";
+
   HOME_TIPOS.forEach(tipo => {
     const cfg   = CONFIG[tipo];
     const lista = shuffleArray(items.filter(i => i.tipo === tipo)).slice(0, 55);
@@ -59,9 +63,13 @@ function renderHomeCategories(items) {
       track.className = "home-carrusel-track";
       trackWrap.appendChild(track);
 
+      const _sesionHome = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+      const _mostrarBtnHome = _sesionHome && _sesionHome.rol !== "admin";
+
       lista.forEach(it => {
         const card = document.createElement("div");
         card.className = "home-item-card";
+        card.style.position = "relative";
         card.onclick = () => window.location.href = `/pages/item.html?id=${it.id}`;
         const posterHTML = it.imagen
           ? `<img src="${it.imagen}" alt="${it.titulo}" loading="lazy"/>`
@@ -70,6 +78,32 @@ function renderHomeCategories(items) {
           <div class="home-item-poster">${posterHTML}</div>
           <div class="home-item-info"><div class="home-item-titulo">${it.titulo}</div></div>
         `;
+
+        if (_mostrarBtnHome) {
+          const btnAgregar = document.createElement("button");
+          btnAgregar.className = "catidx-add-btn";
+          btnAgregar.title = "Agregar a mi dashboard";
+          btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+          btnAgregar.onclick = async (e) => {
+            e.stopPropagation();
+            try {
+              const res = await fetch("/mi-dashboard", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: _sesionHome.id, itemId: it.id })
+              });
+              if (res.ok) {
+                btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+                btnAgregar.style.borderColor = "#22c55e40";
+                setTimeout(() => {
+                  btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+                  btnAgregar.style.borderColor = "";
+                }, 1500);
+              }
+            } catch { alert("Error al agregar"); }
+          };
+          card.appendChild(btnAgregar);
+        }
+
         track.appendChild(card);
       });
 
@@ -185,5 +219,4 @@ function renderFondoBlur(imagenes) {
 
   requestAnimationFrame(animar);
 }
-
 document.addEventListener("DOMContentLoaded", cargarHome);
