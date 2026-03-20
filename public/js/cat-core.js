@@ -1,19 +1,11 @@
 // ╔══════════════════════════════════════════════════════════╗
 // ║  cat-core.js — NÚCLEO DE LA CATEGORÍA                   ║
-// ╠══════════════════════════════════════════════════════════╣
-// ║  Contiene:                                               ║
-// ║  · Validación del tipo de categoría (URL param)         ║
-// ║  · Variables de estado global                           ║
-// ║  · Llamadas a la API (cargar, guardar, eliminar)        ║
-// ║  · Actualización del header (contadores)                ║
-// ║  · Inicialización del DOMContentLoaded                  ║
 // ╚══════════════════════════════════════════════════════════╝
 
 const params = new URLSearchParams(window.location.search);
 const tipo   = params.get("tipo");
 const config = CONFIG[tipo];
 
-// Si la URL no tiene un tipo válido, mostrar error y parar
 if (!tipo || !config) {
     document.body.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:1rem;color:#6b7280">
@@ -24,45 +16,60 @@ if (!tipo || !config) {
     throw new Error("Tipo inválido: " + tipo);
 }
 
-// ── Variables de estado global ────────────────────────────
-// Estos son los datos que usa toda la aplicación.
-// dataOriginal = todos los items cargados de la BD
-// filtroEstado = el filtro activo del sidebar (null = todos)
-// vistaActual  = "grid" o "list"
-// idAEliminar  = id temporal antes de confirmar borrado
 let dataOriginal = [];
 let filtroEstado = null;
 let vistaActual  = "grid";
 let idAEliminar  = null;
 
-// ── Título y sidebar ──────────────────────────────────────
 document.getElementById("titulo-categoria").textContent =
     config.label ? config.label.slice(2).toUpperCase() : tipo.toUpperCase();
-
-// ── Permisos según rol ────────────────────────────────────
-(function aplicarPermisos() {
-    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
-    const esAdmin = user && user.rol === "admin";
-    const btnAnadir = document.getElementById("btn-anadir-categoria");
-    if (btnAnadir && esAdmin) btnAnadir.style.display = "";
-    window._esAdmin = esAdmin;
-})();
 
 document.querySelectorAll(".platform-btn").forEach(btn => {
     const href = btn.getAttribute("href") ?? "";
     btn.classList.toggle("active", href.includes(`tipo=${tipo}`));
 });
 
-// ── API: cargar todos los items ───────────────────────────
-// ── API: cargar todos los items ───────────────────────────
-function cargarItems() {
-    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+async function cargarItems() {
+    try {
+        const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        const esAdmin = !_u || _u.rol === "admin";
 
-    function aplicarDatos(data) {
+        // Cargar todos los items de esta categoría
+        const res  = await fetch(`/items/${tipo}`);
+        let data   = await res.json();
+
+        if (!esAdmin) {
+            // Obtener solo los ids del dashboard del usuario
+            const dashRes  = await fetch(`/mi-dashboard/${_u.id}`);
+            const dashItems = await dashRes.json();
+            const dashIds  = new Set(dashItems.map(i => i.id));
+
+            // Filtrar solo los items que el usuario tiene en su dashboard
+            data = data.filter(i => dashIds.has(i.id));
+
+            // Mezclar progreso personal
+            const progRes  = await fetch(`/progreso/${_u.id}`);
+            const progrMap = await progRes.json();
+
+            data = data.map(item => {
+                const p = progrMap[item.id];
+                return {
+                    ...item,
+                    estado:         p?.estado          ?? config.estados[0],
+                    valoracion:     p?.valoracion       ?? 0,
+                    capituloActual: p?.capituloActual   ?? 0,
+                    paginaActual:   p?.paginaActual     ?? 0,
+                    progresoManga:  p?.progresoManga ? (typeof p.progresoManga === "string" ? JSON.parse(p.progresoManga) : p.progresoManga) : { capituloActual: 0 },
+                    progreso:       p?.progreso       ? (typeof p.progreso === "string" ? JSON.parse(p.progreso) : p.progreso) : { temporada: 1, capitulo: 0 },
+                };
+            });
+        }
+
         dataOriginal = data;
         actualizarHeader();
         crearFiltros();
         aplicarOrden();
+
         setTimeout(() => {
             const hash = window.location.hash;
             if (hash) {
@@ -78,29 +85,11 @@ function cargarItems() {
                 }
             }
         }, 300);
+    } catch(err) {
+        console.error("Error al cargar items:", err);
     }
-
-    fetch(`/items/${tipo}`)
-        .then(r => r.json())
-        .then(todos => {
-            if (user && user.rol !== "admin") {
-                fetch(`/mi-dashboard/${user.id}`)
-                    .then(r => r.json())
-                    .then(misItems => {
-                        const misIds = new Set(misItems.map(i => i.id));
-                        aplicarDatos(todos.filter(i => misIds.has(i.id)));
-                    })
-                    .catch(() => aplicarDatos([]));
-            } else {
-                aplicarDatos(todos);
-            }
-        })
-        .catch(err => console.error("Error al cargar items:", err));
 }
 
-// ── API: actualizar item (recarga la lista después) ───────
-// Usar solo cuando se necesite recargar toda la vista.
-// Para cambios de progreso o edición rápida usar actualizarItemSilencioso().
 function actualizarItem(item) {
     fetch(`/items/${item.id}`, {
         method: "PUT",
@@ -112,17 +101,50 @@ function actualizarItem(item) {
         .catch(err => console.error("Error al actualizar:", err));
 }
 
-// ── API: actualizar item sin recargar la lista ────────────
-// Solo hace el PUT a la BD. El DOM se actualiza por separado con parchear*.
-function actualizarItemSilencioso(item) {
-    fetch(`/items/${item.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item)
-    }).catch(err => console.error("Error al actualizar:", err));
+async function quitarDeDashboard(itemId, btn) {
+    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    if (!_u) return;
+    if (btn) { btn.disabled = true; btn.textContent = "..."; }
+    try {
+        const res = await fetch(`/mi-dashboard/${_u.id}/${itemId}`, { method: "DELETE" });
+        if (res.ok) {
+            const card = document.getElementById(`card-${itemId}`);
+            if (card) card.remove();
+            dataOriginal = dataOriginal.filter(i => i.id !== itemId);
+            actualizarHeader();
+            crearFiltros();
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = "✕ Quitar"; }
+        }
+    } catch {
+        if (btn) { btn.disabled = false; btn.textContent = "✕ Quitar"; }
+    }
 }
 
-// ── Contadores del header ─────────────────────────────────
+function actualizarItemSilencioso(item) {
+    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    if (_u && _u.rol !== "admin") {
+        fetch(`/progreso/${_u.id}/${item.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                estado:         item.estado,
+                valoracion:     item.valoracion,
+                capituloActual: item.capituloActual,
+                paginaActual:   item.paginaActual,
+                progresoManga:  item.progresoManga,
+                progreso:       item.progreso
+            })
+        }).catch(err => console.error("Error al guardar progreso:", err));
+    } else {
+        fetch(`/items/${item.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item)
+        }).catch(err => console.error("Error al actualizar:", err));
+    }
+}
+
 function actualizarHeader() {
     const total       = dataOriginal.length;
     const completados = dataOriginal.filter(i => config.estadosCompletados?.includes(i.estado)).length;
@@ -136,14 +158,20 @@ function actualizarHeader() {
     document.getElementById("avg-rating-header").textContent = avg;
 }
 
-// ── DOMContentLoaded: arranque de la página ───────────────
+function aplicarPermisos() {
+    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    window._esAdmin = _u && _u.rol === "admin";
+    const btnAnadir = document.getElementById("btn-anadir-categoria");
+    if (btnAnadir) btnAnadir.style.display = window._esAdmin ? "" : "none";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    aplicarPermisos();
     crearFormulario();
 
     const toggleBtn     = document.getElementById("toggle-form");
     const formContainer = document.getElementById("form-container");
 
-    // Solo agregar el listener si el botón existe
     if (toggleBtn && formContainer) {
         toggleBtn.addEventListener("click", () => {
             const visible = !formContainer.classList.contains("oculto");
@@ -152,7 +180,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Modal de confirmación de borrado
     document.getElementById("btnConfirmar")?.addEventListener("click", () => {
         if (!idAEliminar) return;
         fetch(`/items/${idAEliminar}`, { method: "DELETE" })
@@ -169,7 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalConfirmacion").classList.add("oculto");
     });
 
-    // Cerrar modal de confirmación al hacer click fuera
     document.getElementById("modalConfirmacion")?.addEventListener("click", function(e) {
         if (e.target === this) {
             idAEliminar = null;
@@ -177,21 +203,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Cerrar modal expandido al hacer click en el overlay
     document.getElementById("modal-expandido")?.addEventListener("click", function(e) {
         if (e.target !== this) return;
-
-        // Si estamos en modo edición (formulario dentro del modal), volver
         const inner = document.querySelector(".modal-expandido-inner");
         if (inner && !inner.querySelector("#me-poster")) {
             const idActual = meItemActual?.id;
             if (idActual) { meVolverDesdeEdicion(idActual); return; }
         }
-
         cerrarModalExpandido();
     });
 
-    // Escape cierra modales
     document.addEventListener("keydown", function(e) {
         if (e.key === "Escape") {
             cerrarModalExpandido();
@@ -199,7 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Guardar el HTML original del modal expandido
     meInnerHTMLOriginal = document.querySelector(".modal-expandido-inner").innerHTML;
 
     cargarItems();

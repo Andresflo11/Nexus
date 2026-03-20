@@ -136,8 +136,9 @@ function abrirModalExpandido(id) {
     if (config.usaTomos) {
     const tomos     = item.tomos ?? [];
     const capActual = item.progresoManga?.capituloActual ?? 0;
-    const tomoActual = tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
-                    ?? tomos[tomos.length - 1];
+    const tomoActual = capActual === 0
+                    ? (tomos[0] ?? null)
+                    : (tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin) ?? tomos[tomos.length - 1]);
     const capMax    = tomos[tomos.length - 1]?.capituloFin ?? 0;
 const capFin    = tomoActual?.capituloFin ?? 0;
 const capInicio = tomoActual?.capituloInicio ?? 1;
@@ -351,9 +352,11 @@ function meGuardarCampo(campo, valor) {
         const estadoComp = config.estadosCompletados?.[0];
         const color      = config.color ?? "#888";
         const btn        = document.getElementById("me-btn-completar");
-        btn.textContent        = yaCompleto ? "✓ Completado" : `Marcar como ${estadoComp}`;
-        btn.style.background   = yaCompleto ? color : "transparent";
-        btn.style.color        = yaCompleto ? "#000" : color;
+        if (btn) {
+            btn.textContent        = yaCompleto ? "✓ Completado" : `Marcar como ${estadoComp}`;
+            btn.style.background   = yaCompleto ? color : "transparent";
+            btn.style.color        = yaCompleto ? "#000" : color;
+        }
     }
 
     // Sincronizar dataOriginal
@@ -622,8 +625,9 @@ function parchearProgresoManga(id) {
 
     const capActual  = item.progresoManga?.capituloActual ?? 0;
     const capMax     = item.tomos?.[item.tomos.length - 1]?.capituloFin ?? 0;
-    const tomoActual = item.tomos?.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
-                    ?? item.tomos?.[item.tomos.length - 1];
+    const tomoActual = capActual === 0
+                    ? (item.tomos?.[0] ?? null)
+                    : (item.tomos?.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin) ?? item.tomos?.[item.tomos.length - 1]);
     const pct = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 100)) : 0;
 
     const infoEl = card.querySelector(".progress-info");

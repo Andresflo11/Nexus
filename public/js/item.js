@@ -1,6 +1,5 @@
 // ╔══════════════════════════════════════════════════════════╗
 // ║  item.js — PÁGINA DE DETALLE DE UN ITEM                 ║
-// ║  Carga un item por ID y muestra toda su información     ║
 // ╚══════════════════════════════════════════════════════════╝
 
 function esc(str) {
@@ -63,21 +62,37 @@ function renderItem() {
     ? `<img src="${esc(item.imagen)}" alt="${esc(item.titulo)}">`
     : `<span style="font-size:3.5rem">${cfg.label.split(" ")[0]}</span>`;
 
-  const selEstado = document.getElementById("item-estado");
-  selEstado.innerHTML = cfg.estados.map(e =>
-    `<option value="${e}" ${e === item.estado ? "selected" : ""}>${e}</option>`
-  ).join("");
-  selEstado.style.borderColor = color;
-
-  document.getElementById("item-valoracion").value = item.valoracion ?? 0;
-
-  const btn        = document.getElementById("item-btn-completar");
-  const estadoComp = cfg.estadosCompletados?.[0];
-  const yaCompleto = cfg.estadosCompletados?.includes(item.estado);
-  btn.textContent      = yaCompleto ? "✓ Completado" : `Marcar como ${estadoComp}`;
-  btn.style.background  = yaCompleto ? color : "transparent";
-  btn.style.color       = yaCompleto ? "#000" : color;
-  btn.style.borderColor = color;
+  // Botón añadir al dashboard para usuarios normales
+  const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  const btnWrap = document.getElementById("item-btn-dashboard-wrap");
+  if (btnWrap) btnWrap.remove();
+  if (_u && _u.rol !== "admin") {
+    // Verificar si ya está en el dashboard
+    fetch(`/mi-dashboard/${_u.id}`)
+      .then(r => r.json())
+      .then(dashItems => {
+        const yaAgregado = dashItems.some(d => d.id === item.id);
+        const wrap = document.createElement("div");
+        wrap.id = "item-btn-dashboard-wrap";
+        wrap.style.cssText = "margin-top:1rem";
+        if (yaAgregado) {
+          wrap.innerHTML = `
+            <div style="width:100%;padding:0.65rem 1rem;background:#22c55e10;border:1px solid #22c55e40;border-radius:8px;color:#22c55e;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:0.5rem">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              Ya en tu dashboard
+            </div>`;
+        } else {
+          wrap.innerHTML = `
+            <button id="item-btn-dashboard" onclick="agregarAlDashboard()"
+              style="width:100%;padding:0.65rem 1rem;background:transparent;border:1px solid ${color}40;border-radius:8px;color:${color};cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;transition:background 0.2s"
+              onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='transparent'">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Añadir a mi dashboard
+            </button>`;
+        }
+        poster.insertAdjacentElement("afterend", wrap);
+      });
+  }
 
   renderInfoCol(color);
 
@@ -99,12 +114,6 @@ function renderInfoCol(color) {
     metaTags.push(`<span class="me-tag" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>`);
   if (item.estadoSerie && item.estadoSerie !== "null")
     metaTags.push(`<span class="me-tag me-tag-serie">${esc(item.estadoSerie)}</span>`);
-  if (item.estado)
-    metaTags.push(`<span class="me-tag me-tag-estado">${esc(item.estado)}</span>`);
-  if (cfg.usalogros && item.logros) {
-    const emoji = item.logros === "Todos completados" ? "🏆 " : "";
-    metaTags.push(`<span class="me-tag">${emoji}${esc(item.logros)}</span>`);
-  }
 
   col.insertAdjacentHTML("beforeend", `
     <div>
@@ -126,44 +135,47 @@ function renderInfoCol(color) {
 
 function renderSeccionEpisodios(col, color) {
   const temps = item.temporadas ?? [];
-  const temp  = temps[tabActual] ?? temps[0];
-  if (!temp) return;
 
-  const epActual = item.progreso?.episodio ?? 0;
-  const epTotal  = temp.episodios ?? 0;
-  const pct      = epTotal > 0 ? Math.min(100, Math.round((epActual / epTotal) * 100)) : 0;
-
-  const tabsHTML = temps.map((t, i) => `
-    <button class="item-tab ${i === tabActual ? "activo" : ""}"
+  const tabsHTML = temps.map((t, i) => {
+    const label = t.tipo === "ova"      ? `OVA ${t.numero}`
+                : t.tipo === "especial" ? `ESP ${t.numero}`
+                : `T${t.numero}`;
+    return `<button class="item-tab ${i === tabActual ? "activo" : ""}"
       style="${i === tabActual ? `background:${color};border-color:${color};color:#000` : ""}"
-      onclick="cambiarTabTemp(${i})">${t.nombre ?? `T${i+1}`}</button>
-  `).join("");
+      onclick="cambiarTabTemp(${i})">${label}</button>`;
+  }).join("");
 
-  const dots = Array.from({length: epTotal}, (_, i) => {
-    const visto = i < epActual;
-    return `<div class="item-ep-dot ${visto ? "visto" : ""}"
-      style="${visto ? `background:${color};` : ""}"
-      title="Ep ${i+1}">${i+1}</div>`;
+  // Mostrar capítulos de todas las temporadas
+  const todasTempsHTML = temps.map((t, i) => {
+    const esActual = i === (item.progreso?.temporada ? item.progreso.temporada - 1 : 0);
+    const capsVistas = esActual
+      ? (item.progreso?.capitulo ?? 0)
+      : (item.progreso?.temporada - 1 > i ? t.capitulos : 0);
+    const label = t.tipo === "ova"      ? `OVA ${t.numero}`
+                : t.tipo === "especial" ? `Especial ${t.numero}`
+                : `Temporada ${t.numero}`;
+    const dots = Array.from({length: t.capitulos}, (_, j) => {
+      const n      = j + 1;
+      const visto  = capsVistas >= n;
+      const actual = esActual && (item.progreso?.capitulo ?? 0) === n;
+      return `<div class="item-ep-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}"
+        style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40` : ""}"
+        title="Ep ${n}">${n}</div>`;
+    }).join("");
+
+    return `
+      <div style="margin-bottom:1.25rem">
+        <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${color};margin-bottom:0.5rem">${label} <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:400">${t.capitulos} caps</span></div>
+        <div class="item-eps-grid">${dots}</div>
+      </div>`;
   }).join("");
 
   const sec = document.createElement("div");
   sec.className = "item-section";
   sec.id = "sec-episodios";
   sec.innerHTML = `
-    <div class="item-section-label">Progreso</div>
-    <div class="item-progreso-header">
-      <span>Temporada ${temp.nombre ?? tabActual+1} · Ep <span id="ep-num">${epActual}</span>/${epTotal}</span>
-      <div class="item-prog-btns">
-        <button class="item-prog-btn" onclick="cambiarEp(-1)" style="border-color:${color}">−</button>
-        <span class="item-prog-num" id="ep-num-display">${epActual}</span>
-        <button class="item-prog-btn" onclick="cambiarEp(1)" style="border-color:${color}">+</button>
-      </div>
-    </div>
-    <div class="item-progress-wrap">
-      <div class="item-progress-fill" id="ep-barra" style="width:${pct}%;background:${color}"></div>
-    </div>
-    <div class="item-tabs">${tabsHTML}</div>
-    <div class="item-eps-grid" id="eps-grid">${dots}</div>
+    <div class="item-section-label">Temporadas</div>
+    ${todasTempsHTML}
   `;
   col.appendChild(sec);
 }
@@ -175,64 +187,40 @@ function cambiarTabTemp(idx) {
   renderSeccionEpisodios(document.getElementById("item-info-col"), cfg.color);
 }
 
-function cambiarEp(delta) {
-  const temp   = (item.temporadas ?? [])[tabActual];
-  if (!temp) return;
-  const max    = temp.episodios ?? 0;
-  const actual = item.progreso?.episodio ?? 0;
-  const nuevo  = Math.max(0, Math.min(max, actual + delta));
-  if (nuevo === actual) return;
-  if (!item.progreso) item.progreso = {};
-  item.progreso.episodio  = nuevo;
-  item.progreso.temporada = tabActual + 1;
-  guardarCampo("progreso", item.progreso);
-  const sec = document.getElementById("sec-episodios");
-  if (sec) sec.remove();
-  renderSeccionEpisodios(document.getElementById("item-info-col"), cfg.color);
-}
-
 function renderSeccionManga(col, color) {
   const tomos     = item.tomos ?? [];
   const capActual = item.progresoManga?.capituloActual ?? 0;
   const capMax    = tomos[tomos.length-1]?.capituloFin ?? 0;
-  const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 100)) : 0;
 
-  const tabsHTML = tomos.map((t) => {
+  const tomosHTML = tomos.map(t => {
     const esCurrent = capActual >= t.capituloInicio && capActual <= t.capituloFin;
-    return `<button class="item-tab ${esCurrent ? "activo" : ""}"
-      style="${esCurrent ? `background:${color};border-color:${color};color:#000` : ""}">T${t.numero}</button>`;
+    const total = t.capituloFin - t.capituloInicio + 1;
+    const dots  = Array.from({length: total}, (_, i) => {
+      const n      = t.capituloInicio + i;
+      const visto  = n <= capActual;
+      const actual = n === capActual;
+      return `<div class="item-ep-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}"
+        style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40` : ""}"
+        title="Cap. ${n}">${n}</div>`;
+    }).join("");
+
+    return `
+      <div style="margin-bottom:1.25rem">
+        <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${esCurrent ? color : "var(--muted)"};margin-bottom:0.5rem">
+          Tomo ${t.numero} <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:400">caps ${t.capituloInicio}–${t.capituloFin}</span>
+          ${esCurrent ? `<span style="font-size:0.65rem;color:${color};margin-left:0.5rem">← actual</span>` : ""}
+        </div>
+        <div class="item-eps-grid">${dots}</div>
+      </div>`;
   }).join("");
 
   const sec = document.createElement("div");
   sec.className = "item-section";
   sec.innerHTML = `
-    <div class="item-section-label">Progreso manga</div>
-    <div class="item-progreso-header">
-      <span>Cap. <span id="cap-manga-num">${capActual}</span> / ${capMax}</span>
-      <div class="item-prog-btns">
-        <button class="item-prog-btn" onclick="cambiarCap(-1)" style="border-color:${color}">−</button>
-        <span class="item-prog-num">${capActual}</span>
-        <button class="item-prog-btn" onclick="cambiarCap(1)" style="border-color:${color}">+</button>
-      </div>
-    </div>
-    <div class="item-progress-wrap">
-      <div class="item-progress-fill" style="width:${pctGlobal}%;background:${color}"></div>
-    </div>
-    <div class="item-tabs">${tabsHTML}</div>
+    <div class="item-section-label">Tomos y capítulos</div>
+    ${tomosHTML}
   `;
   col.appendChild(sec);
-}
-
-function cambiarCap(delta) {
-  const tomos  = item.tomos ?? [];
-  const capMax = tomos[tomos.length-1]?.capituloFin ?? 0;
-  const actual = item.progresoManga?.capituloActual ?? 0;
-  const nuevo  = Math.max(0, Math.min(capMax, actual + delta));
-  if (nuevo === actual) return;
-  if (!item.progresoManga) item.progresoManga = {};
-  item.progresoManga.capituloActual = nuevo;
-  guardarCampo("progresoManga", item.progresoManga);
-  renderInfoCol(cfg.color);
 }
 
 function renderSeccionCapitulos(col, color) {
@@ -240,31 +228,22 @@ function renderSeccionCapitulos(col, color) {
   const total  = item.capitulosTotales ?? 0;
   const pct    = total > 0 ? Math.min(100, Math.round((actual / total) * 100)) : 0;
 
+  const dots = Array.from({length: total}, (_, i) => {
+    const n     = i + 1;
+    const visto = n <= actual;
+    return `<div class="item-ep-dot ${visto ? "visto" : ""}"
+      style="${visto ? `background:${color}25;border-color:${color}40` : ""}"
+      title="Cap. ${n}">${n}</div>`;
+  }).join("");
+
   const sec = document.createElement("div");
   sec.className = "item-section";
   sec.innerHTML = `
-    <div class="item-section-label">Progreso</div>
-    <div class="item-progreso-header">
-      <span>Capítulo <span>${actual}</span> / ${total}</span>
-      <div class="item-prog-btns">
-        <button class="item-prog-btn" onclick="cambiarCapSimple(-1)" style="border-color:${color}">−</button>
-        <span class="item-prog-num">${actual}</span>
-        <button class="item-prog-btn" onclick="cambiarCapSimple(1)" style="border-color:${color}">+</button>
-      </div>
-    </div>
-    <div class="item-progress-wrap">
-      <div class="item-progress-fill" style="width:${pct}%;background:${color}"></div>
-    </div>
+    <div class="item-section-label">Capítulos</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Cap. ${actual} / ${total} (${pct}%)</div>
+    <div class="item-eps-grid">${dots}</div>
   `;
   col.appendChild(sec);
-}
-
-function cambiarCapSimple(delta) {
-  const total = item.capitulosTotales ?? 0;
-  const nuevo = Math.max(0, Math.min(total, (item.capituloActual ?? 0) + delta));
-  item.capituloActual = nuevo;
-  guardarCampo("capituloActual", nuevo);
-  renderInfoCol(cfg.color);
 }
 
 function renderSeccionPaginas(col, color) {
@@ -276,27 +255,12 @@ function renderSeccionPaginas(col, color) {
   sec.className = "item-section";
   sec.innerHTML = `
     <div class="item-section-label">Páginas</div>
-    <div class="item-progreso-header">
-      <span>Página <span>${actual}</span> / ${total}</span>
-      <div class="item-prog-btns">
-        <button class="item-prog-btn" onclick="cambiarPag(-1)" style="border-color:${color}">−</button>
-        <span class="item-prog-num">${actual}</span>
-        <button class="item-prog-btn" onclick="cambiarPag(1)" style="border-color:${color}">+</button>
-      </div>
-    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Página ${actual} / ${total} (${pct}%)</div>
     <div class="item-progress-wrap">
       <div class="item-progress-fill" style="width:${pct}%;background:${color}"></div>
     </div>
   `;
   col.appendChild(sec);
-}
-
-function cambiarPag(delta) {
-  const total = item.paginasTotales ?? 0;
-  const nuevo = Math.max(0, Math.min(total, (item.paginaActual ?? 0) + delta));
-  item.paginaActual = nuevo;
-  guardarCampo("paginaActual", nuevo);
-  renderInfoCol(cfg.color);
 }
 
 function renderSeccionDlcs(col, color) {
@@ -305,7 +269,6 @@ function renderSeccionDlcs(col, color) {
       <span class="item-dlc-tipo">${esc(d.tipo ?? "DLC")}</span>
       <span class="item-dlc-nombre">${esc(d.nombre)}</span>
       <span class="me-tag tag-estado" style="font-size:0.62rem">${esc(d.estado ?? "")}</span>
-      ${d.logros ? `<span class="me-tag" style="font-size:0.62rem">${d.logros === "Todos completados" ? "🏆 " : ""}${esc(d.logros)}</span>` : ""}
     </div>
   `).join("");
 
@@ -315,24 +278,36 @@ function renderSeccionDlcs(col, color) {
   col.appendChild(sec);
 }
 
+async function agregarAlDashboard() {
+  const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  if (!_u) return;
+  const btn = document.getElementById("item-btn-dashboard");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/mi-dashboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: _u.id, itemId: item.id })
+    });
+    if (res.ok) {
+      const wrap = document.getElementById("item-btn-dashboard-wrap");
+      const color = cfg.color ?? "#888";
+      if (wrap) wrap.innerHTML = `
+        <div style="width:100%;padding:0.65rem 1rem;background:#22c55e10;border:1px solid #22c55e40;border-radius:8px;color:#22c55e;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:0.5rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Ya en tu dashboard
+        </div>`;
+    }
+  } catch { if (btn) btn.disabled = false; }
+}
+
 function guardarCampo(campo, valor) {
   item[campo] = valor;
   fetch(`/items/${item.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(item)
-  }).then(() => {
-    if (campo === "estado" || campo === "valoracion") renderItem();
   }).catch(err => console.error("Error guardando:", err));
-}
-
-function completarRapido() {
-  const yaCompleto  = cfg.estadosCompletados?.includes(item.estado);
-  const nuevoEstado = yaCompleto
-    ? (cfg.estados.find(e => !cfg.estadosCompletados.includes(e)) ?? cfg.estados[0])
-    : cfg.estadosCompletados[0];
-  document.getElementById("item-estado").value = nuevoEstado;
-  guardarCampo("estado", nuevoEstado);
 }
 
 document.addEventListener("DOMContentLoaded", cargarItem);

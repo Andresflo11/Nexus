@@ -1,6 +1,5 @@
 // ╔══════════════════════════════════════════════════════════╗
 // ║  categoria-index.js — Vista grid de categoría           ║
-// ║  Lee ?tipo=X, carga items y los muestra en grid         ║
 // ╚══════════════════════════════════════════════════════════╝
 
 const params = new URLSearchParams(location.search);
@@ -10,26 +9,27 @@ const CFG    = CONFIG[TIPO] || {};
 document.documentElement.style.setProperty("--cat-color", CFG.color || "var(--accent)");
 document.title = `NEXUS — ${CFG.label || TIPO}`;
 
-const ESTADOS_COLOR = {
-  "completado":  "#22c55e",
-  "en-progreso": "#e8ff47",
-  "pendiente":   "#6b7280",
-  "abandonado":  "#ef4444",
-  "en-curso":    "#e8ff47",
-  "jugando":     "#e8ff47",
-  "viendo":      "#e8ff47",
-  "leyendo":     "#e8ff47",
-};
-
 const RATINGS = ["","★","★★","★★★","★★★★","♥"];
 
-let todosItems = [];
+let todosItems  = [];
+let dashIds     = new Set(); // ids ya agregados al dashboard del usuario
 
 async function cargar() {
   try {
-    const res   = await fetch("/items");
+    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const mostrarBtn = _u && _u.rol !== "admin";
+
+    const res  = await fetch("/items");
     const items = await res.json();
     todosItems  = items.filter(i => i.tipo === TIPO);
+
+    // Cargar dashboard del usuario para saber qué ya está agregado
+    if (mostrarBtn) {
+      const dashRes = await fetch(`/mi-dashboard/${_u.id}`);
+      const dashItems = await dashRes.json();
+      dashIds = new Set(dashItems.map(i => i.id));
+    }
+
     renderizar();
   } catch(e) {
     console.error(e);
@@ -37,6 +37,9 @@ async function cargar() {
 }
 
 function renderizar() {
+  const _u         = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  const mostrarBtn = _u && _u.rol !== "admin";
+
   const q      = document.getElementById("catidx-buscar").value.toLowerCase();
   const estado = document.getElementById("catidx-estado").value;
   const orden  = document.getElementById("catidx-orden").value;
@@ -71,43 +74,45 @@ function renderizar() {
       ? `<img src="${it.imagen}" alt="${it.titulo}" loading="lazy">`
       : (CFG.label?.split(" ")[0] || "?");
 
-    const dotColor = ESTADOS_COLOR[it.estado] || "#6b7280";
-    const rating   = it.valoracion ? RATINGS[it.valoracion] || "" : "";
-
-    const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
-    const mostrarBtn = user && user.rol !== "admin";
-
-    const btnAgregar = document.createElement("button");
-    btnAgregar.className = "catidx-add-btn";
-    btnAgregar.title = "Agregar a mi dashboard";
-    btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
-    btnAgregar.onclick = async (e) => {
-        e.stopPropagation();
-        const user = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
-        if (!user) { alert("Debes iniciar sesión para agregar items a tu dashboard"); return; }
-        try {
-            const res = await fetch("/mi-dashboard", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.id, itemId: it.id })
-            });
-            if (res.ok) {
-                btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
-                btnAgregar.style.borderColor = "#22c55e40";
-                setTimeout(() => {
-                    btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
-                    btnAgregar.style.borderColor = "";
-                }, 1500);
-            }
-        } catch { alert("Error al agregar"); }
-    };
-
     card.innerHTML = `
       <div class="catidx-poster">${posterHTML}</div>
       <div class="catidx-info">
         <div class="catidx-nombre">${it.titulo || "Sin título"}</div>
       </div>
     `;
-    if (mostrarBtn) card.appendChild(btnAgregar);
+
+    if (mostrarBtn) {
+      const yaAgregado = dashIds.has(it.id);
+      const btnAgregar = document.createElement("button");
+      btnAgregar.className = "catidx-add-btn";
+      btnAgregar.title = yaAgregado ? "Ya en tu dashboard" : "Agregar a mi dashboard";
+
+      if (yaAgregado) {
+        btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+        btnAgregar.style.borderColor = "#22c55e40";
+        btnAgregar.style.cursor = "default";
+      } else {
+        btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+        btnAgregar.onclick = async (e) => {
+          e.stopPropagation();
+          try {
+            const res = await fetch("/mi-dashboard", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: _u.id, itemId: it.id })
+            });
+            if (res.ok) {
+              dashIds.add(it.id);
+              btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+              btnAgregar.style.borderColor = "#22c55e40";
+              btnAgregar.style.cursor = "default";
+              btnAgregar.onclick = null;
+            }
+          } catch { alert("Error al agregar"); }
+        };
+      }
+      card.appendChild(btnAgregar);
+    }
+
     grid.appendChild(card);
   });
 }

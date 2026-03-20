@@ -110,8 +110,11 @@ function renderCard(item, idx) {
           ${progreso}
           <div class="card-actions">
             ${window._esAdmin ? `
-            <button class="card-btn" onclick="abrirModalExpandido(${item.id});setTimeout(()=>meAbrirEdicion(),300)">✏ Editar</button>
-            <button class="card-btn danger" onclick="eliminarItem(${item.id})">✕</button>` : ""}
+              <button class="card-btn" onclick="abrirModalExpandido(${item.id});setTimeout(()=>meAbrirEdicion(),300)">✏ Editar</button>
+              <button class="card-btn danger" onclick="eliminarItem(${item.id})">✕</button>
+            ` : `
+              <button class="card-btn danger" title="Quitar de mi dashboard" onclick="quitarDeDashboard(${item.id}, this)">✕ Quitar</button>
+            `}
           </div>
         </div>
       </div>

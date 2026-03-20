@@ -7,15 +7,26 @@ const HOME_TIPOS = ["juegos","peliculas","series","animes","mangas","comics","li
 
 async function cargarHome() {
   try {
+    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const mostrarBtn = _u && _u.rol !== "admin";
+
     const res   = await fetch("/items");
     const items = await res.json();
-    renderHomeCategories(items);
+
+    let homeDashIds = new Set();
+    if (mostrarBtn) {
+      const dashRes   = await fetch(`/mi-dashboard/${_u.id}`);
+      const dashItems = await dashRes.json();
+      homeDashIds = new Set(dashItems.map(i => i.id));
+    }
+
+    renderHomeCategories(items, homeDashIds, _u, mostrarBtn);
   } catch(e) {
     console.error("Error cargando home:", e);
   }
 }
 
-function renderHomeCategories(items) {
+function renderHomeCategories(items, homeDashIds = new Set(), _u = null, mostrarBtn = false) {
   const wrap = document.getElementById("home-categorias");
   wrap.innerHTML = "";
 
@@ -79,28 +90,35 @@ function renderHomeCategories(items) {
           <div class="home-item-info"><div class="home-item-titulo">${it.titulo}</div></div>
         `;
 
-        if (_mostrarBtnHome) {
+         if (mostrarBtn) {
+          const yaAgregado = homeDashIds.has(it.id);
           const btnAgregar = document.createElement("button");
           btnAgregar.className = "catidx-add-btn";
-          btnAgregar.title = "Agregar a mi dashboard";
-          btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
-          btnAgregar.onclick = async (e) => {
-            e.stopPropagation();
-            try {
-              const res = await fetch("/mi-dashboard", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: _sesionHome.id, itemId: it.id })
-              });
-              if (res.ok) {
-                btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
-                btnAgregar.style.borderColor = "#22c55e40";
-                setTimeout(() => {
-                  btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
-                  btnAgregar.style.borderColor = "";
-                }, 1500);
-              }
-            } catch { alert("Error al agregar"); }
-          };
+          btnAgregar.title = yaAgregado ? "Ya en tu dashboard" : "Agregar a mi dashboard";
+
+          if (yaAgregado) {
+            btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+            btnAgregar.style.borderColor = "#22c55e40";
+            btnAgregar.style.cursor = "default";
+          } else {
+            btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+            btnAgregar.onclick = async (e) => {
+              e.stopPropagation();
+              try {
+                const res = await fetch("/mi-dashboard", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userId: _u.id, itemId: it.id })
+                });
+                if (res.ok) {
+                  homeDashIds.add(it.id);
+                  btnAgregar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+                  btnAgregar.style.borderColor = "#22c55e40";
+                  btnAgregar.style.cursor = "default";
+                  btnAgregar.onclick = null;
+                }
+              } catch { alert("Error al agregar"); }
+            };
+          }
           card.appendChild(btnAgregar);
         }
 
