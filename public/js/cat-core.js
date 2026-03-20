@@ -17,6 +17,7 @@ if (!tipo || !config) {
 }
 
 let dataOriginal = [];
+let todosLosItemsGlobal = [];
 let filtroEstado = null;
 let vistaActual  = "grid";
 let idAEliminar  = null;
@@ -34,9 +35,13 @@ async function cargarItems() {
         const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
         const esAdmin = !_u || _u.rol === "admin";
 
-        // Cargar todos los items de esta categoría
-        const res  = await fetch(`/items/${tipo}`);
+        // Cargar todos los items de esta categoría + globales para relacionados
+        const [res, resGlobal] = await Promise.all([
+            fetch(`/items/${tipo}`),
+            fetch(`/items`)
+        ]);
         let data   = await res.json();
+        todosLosItemsGlobal = await resGlobal.json();
 
         if (!esAdmin) {
             // Obtener solo los ids del dashboard del usuario

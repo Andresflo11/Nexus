@@ -196,6 +196,41 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
         btnEditar.style.display = (_u && _u.rol === "admin") ? "" : "none";
     }
 
+    // ── Relacionados ──────────────────────────────────────
+    const secRel = document.getElementById("me-relacionados");
+    const relacionados = Array.isArray(item.relacionados) ? item.relacionados : [];
+    if (relacionados.length && secRel) {
+        secRel.classList.remove("oculto");
+        secRel.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Relacionados</div>
+        <div id="me-rel-cards" style="display:flex;flex-direction:column;gap:0.5rem">
+            <div style="color:var(--muted);font-size:0.78rem">Cargando...</div>
+        </div>`;
+        fetch(`/items/bulk/${relacionados.join(",")}`)
+            .then(r => r.json())
+            .then(rels => {
+                const html = rels.map(r => {
+                    const cfg2 = CONFIG[r.tipo];
+                    return `<div onclick="abrirModalExpandido(${r.id})" style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s"
+                        onmouseover="this.style.borderColor='${cfg2?.color ?? color}60'" onmouseout="this.style.borderColor='var(--border)'">
+                        ${r.imagen ? `<img src="${r.imagen}" style="width:32px;height:46px;object-fit:cover;border-radius:5px;flex-shrink:0">` : `<span style="font-size:1.3rem;flex-shrink:0">${cfg2?.label.split(" ")[0] ?? "?"}</span>`}
+                        <div style="min-width:0">
+                            <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.titulo)}</div>
+                            <div style="font-size:0.65rem;color:${cfg2?.color ?? "var(--muted)"};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;margin-top:0.15rem">${cfg2?.label.slice(2) ?? r.tipo}</div>
+                        </div>
+                        <span class="me-tag me-tag-estado" style="margin-left:auto;flex-shrink:0;font-size:0.6rem">${esc(r.estado ?? "")}</span>
+                    </div>`;
+                }).join("");
+                const cont = document.getElementById("me-rel-cards");
+                if (cont) cont.innerHTML = html || `<div style="color:var(--muted);font-size:0.78rem">Sin items relacionados</div>`;
+            }).catch(() => {
+                const cont = document.getElementById("me-rel-cards");
+                if (cont) cont.innerHTML = `<div style="color:var(--muted);font-size:0.78rem">Error cargando</div>`;
+            });
+    } else if (secRel) {
+        secRel.classList.add("oculto");
+        secRel.innerHTML = "";
+    }
+
     // Animación de apertura
     if (modal.classList.contains("oculto")) {
         modal.classList.remove("oculto");

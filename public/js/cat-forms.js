@@ -261,6 +261,33 @@ function activarEdicionEnModal(id) {
         <div class="number-wrap"><input type="number" id="paginaActual-${id}" value="${item.paginaActual ?? ""}" placeholder="Página actual" min="0"></div>`;
     }
 
+    // Sección de items relacionados
+    const relacionadosActuales = Array.isArray(item.relacionados) ? item.relacionados : [];
+    const relacionadosHTML = relacionadosActuales.map(rid => {
+        const fuenteRel = (typeof todosLosItemsGlobal !== "undefined" && todosLosItemsGlobal.length)
+            ? todosLosItemsGlobal : dataOriginal;
+        const rel  = fuenteRel.find(i => i.id === rid);
+        const cfg2 = rel ? CONFIG[rel.tipo] : null;
+        return rel ? `
+        <div id="rel-tag-${rid}" style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
+            ${cfg2 ? `<span style="color:${cfg2.color};font-size:0.7rem">${cfg2.label.split(" ")[0]}</span>` : ""}
+            <span>${esc(rel.titulo)}</span>
+            <button type="button" onclick="quitarRelacionado(${rid})" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;margin-left:auto;font-size:0.75rem">✕</button>
+        </div>` : "";
+    }).join("");
+
+    extra += `
+        <div style="grid-column:1/-1;margin-top:0.5rem">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Items relacionados</div>
+            <div id="relacionados-lista" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.5rem">${relacionadosHTML}</div>
+            <div style="position:relative">
+                <input type="text" id="rel-buscar" placeholder="Buscar item para relacionar..." autocomplete="off"
+                    style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;color:var(--text);font-size:0.85rem;box-sizing:border-box"
+                    oninput="buscarParaRelacionar(this.value, ${id})">
+                <div id="rel-resultados" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:99;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4)"></div>
+            </div>
+        </div>`;
+
     const estadoOpts = config.estados.map(e => `<option value="${e}" ${e === item.estado ? "selected" : ""}>${e}</option>`).join("");
     const valOpts    = [5,4,3,2,1,0].map(v => {
         const labels = {5:"Me Encanta",4:"Me gustó",3:"Indiferente",2:"No me gustó",1:"Pésimo",0:"Sin valorar"};
@@ -337,11 +364,46 @@ function guardarEdicionCompleta(id) {
     };
     }
 
+    const listaRel = document.getElementById("relacionados-lista");
+    let nuevosRelIds = [];
+    if (listaRel) {
+        nuevosRelIds = [...listaRel.querySelectorAll("[id^='rel-tag-']")]
+            .map(el => parseInt(el.id.replace("rel-tag-", "")))
+            .filter(Boolean);
+        actualizado.relacionados = nuevosRelIds.length ? nuevosRelIds : null;
+    }
+
     const idx = dataOriginal.findIndex(i => i.id === id);
     if (idx !== -1) dataOriginal[idx] = { ...dataOriginal[idx], ...actualizado };
     meItemActual = dataOriginal[idx];
 
     actualizarItemSilencioso(actualizado);
+
+    // ── Sincronización bidireccional de relacionados ──────
+    // Para cada item relacionado, asegurarse de que también tenga este id en sus relacionados.
+    // También quitar este id de items que ya NO están en la nueva lista.
+    const fuente = (typeof todosLosItemsGlobal !== "undefined" && todosLosItemsGlobal.length)
+        ? todosLosItemsGlobal : dataOriginal;
+
+    // Items que antes tenían relación con este pero ahora fueron quitados
+    fuente.forEach(otroItem => {
+        if (otroItem.id === id) return;
+        const otrosRels = Array.isArray(otroItem.relacionados) ? otroItem.relacionados : [];
+        const meTeníaAntes = otrosRels.includes(id);
+        const metieneAhora = nuevosRelIds.includes(otroItem.id);
+
+        if (metieneAhora && !otrosRels.includes(id)) {
+            // Añadir este id a los relacionados del otro
+            const nuevoRels = [...otrosRels, id];
+            otroItem.relacionados = nuevoRels;
+            sincronizarRelacionadosRemoto(otroItem.id, nuevoRels);
+        } else if (!metieneAhora && meTeníaAntes) {
+            // Quitar este id de los relacionados del otro
+            const nuevoRels = otrosRels.filter(r => r !== id);
+            otroItem.relacionados = nuevoRels.length ? nuevoRels : null;
+            sincronizarRelacionadosRemoto(otroItem.id, nuevoRels.length ? nuevoRels : null);
+        }
+    });
     parchearCard(id);
     if (meItemActual?.id === id && document.getElementById("me-tab-contenido")) {
     meItemActual = dataOriginal.find(i => i.id === id);
@@ -648,4 +710,91 @@ function leerTemporadasDelForm() {
     });
 
     return temporadas.length ? temporadas : null;
+}
+
+// ── Relacionados: buscar ──────────────────────────────────
+function buscarParaRelacionar(q, itemId) {
+    const resDiv = document.getElementById("rel-resultados");
+    if (!resDiv) return;
+    if (!q.trim()) { resDiv.style.display = "none"; return; }
+
+    const listaRel  = document.getElementById("relacionados-lista");
+    const yaIds     = new Set(
+        [...(listaRel?.querySelectorAll("[id^='rel-tag-']") ?? [])]
+            .map(el => parseInt(el.id.replace("rel-tag-", "")))
+    );
+    yaIds.add(itemId); // no relacionarse consigo mismo
+
+    const fuente = (typeof todosLosItemsGlobal !== "undefined" && todosLosItemsGlobal.length)
+        ? todosLosItemsGlobal : dataOriginal;
+    const resultados = fuente
+        .filter(i => i.id !== itemId && !yaIds.has(i.id) && i.titulo?.toLowerCase().includes(q.toLowerCase()))
+        .slice(0, 8);
+
+    if (!resultados.length) { resDiv.style.display = "none"; return; }
+
+    resDiv.style.display = "block";
+    resDiv.innerHTML = resultados.map(r => {
+        const cfg2 = CONFIG[r.tipo];
+        return `<div onclick="agregarRelacionado(${r.id}, ${itemId})"
+            style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s"
+            onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'">
+            ${r.imagen ? `<img src="${r.imagen}" style="width:28px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0">` : `<span style="font-size:1.1rem;flex-shrink:0">${cfg2?.label.split(" ")[0] ?? "?"}</span>`}
+            <div>
+                <div style="font-size:0.82rem;line-height:1.2">${esc(r.titulo)}</div>
+                <div style="font-size:0.65rem;color:${cfg2?.color ?? "var(--muted)"};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.06em">${cfg2?.label.slice(2) ?? r.tipo}</div>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+function agregarRelacionado(relId, itemId) {
+    const fuente = (typeof todosLosItemsGlobal !== "undefined" && todosLosItemsGlobal.length)
+        ? todosLosItemsGlobal : dataOriginal;
+    const rel   = fuente.find(i => i.id === relId);
+    const cfg2  = rel ? CONFIG[rel.tipo] : null;
+    if (!rel) return;
+
+    const listaRel  = document.getElementById("relacionados-lista");
+    const resDiv    = document.getElementById("rel-resultados");
+    const inputBus  = document.getElementById(`rel-buscar-${itemId}`);
+    if (!listaRel) return;
+
+    const tag = document.createElement("div");
+    tag.id = `rel-tag-${relId}`;
+    tag.style.cssText = "display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:0.8rem";
+    tag.innerHTML = `
+        <span style="color:${cfg2?.color ?? "#888"};font-size:0.7rem">${cfg2?.label.split(" ")[0] ?? ""}</span>
+        <span style="flex:1">${esc(rel.titulo)}</span>
+        <button type="button" onclick="quitarRelacionado(${relId}, ${itemId})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0">✕</button>`;
+    listaRel.appendChild(tag);
+
+    if (resDiv) resDiv.style.display = "none";
+    if (inputBus) inputBus.value = "";
+}
+
+function quitarRelacionado(relId, itemId) {
+    document.getElementById(`rel-tag-${relId}`)?.remove();
+}
+
+// Actualiza solo el campo relacionados de un item remoto sin tocarlo completo
+async function sincronizarRelacionadosRemoto(itemId, relIds) {
+    try {
+        // Obtener el item completo para no pisar sus otros campos
+        const res  = await fetch(`/items/id/${itemId}`);
+        if (!res.ok) return;
+        const item = await res.json();
+        item.relacionados = relIds;
+        await fetch(`/items/${itemId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item)
+        });
+        // Actualizar también en memoria global
+        const fuente = (typeof todosLosItemsGlobal !== "undefined") ? todosLosItemsGlobal : [];
+        const gi = fuente.findIndex(i => i.id === itemId);
+        if (gi !== -1) fuente[gi].relacionados = relIds;
+    } catch(e) {
+        console.error("Error sincronizando relacionados:", e);
+    }
 }

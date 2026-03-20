@@ -18,11 +18,13 @@ function tipoSVGs() {
   };
 }
 
-const params  = new URLSearchParams(window.location.search);
-const itemId  = parseInt(params.get("id"));
-let   item    = null;
-let   cfg     = null;
+const params    = new URLSearchParams(window.location.search);
+const itemId    = parseInt(params.get("id"));
+let   item      = null;
+let   cfg       = null;
 let   tabActual = 0;
+
+// ── Carga ─────────────────────────────────────────────────
 
 async function cargarItem() {
   try {
@@ -40,15 +42,17 @@ async function cargarItem() {
   }
 }
 
+// ── Render principal ──────────────────────────────────────
+
 function renderItem() {
   const color = cfg.color ?? "#888";
   document.title = `NEXUS — ${item.titulo}`;
 
   const bg = document.getElementById("item-bg");
-  if (item.imagen) { bg.style.backgroundImage = `url('${esc(item.imagen)}')`;  bg.style.opacity = "1"; }
+  if (item.imagen) { bg.style.backgroundImage = `url('${esc(item.imagen)}')`; bg.style.opacity = "1"; }
 
-  const ref = document.referrer;
   const backBtn = document.getElementById("back-btn");
+  const ref = document.referrer;
   if (ref.includes("categoria.html")) {
     backBtn.href = ref;
     backBtn.querySelector("svg").insertAdjacentHTML("afterend", ` ${cfg.label.slice(2)}`);
@@ -62,12 +66,11 @@ function renderItem() {
     ? `<img src="${esc(item.imagen)}" alt="${esc(item.titulo)}">`
     : `<span style="font-size:3.5rem">${cfg.label.split(" ")[0]}</span>`;
 
-  // Botón añadir al dashboard para usuarios normales
+  // Botón dashboard para usuarios normales
   const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
-  const btnWrap = document.getElementById("item-btn-dashboard-wrap");
-  if (btnWrap) btnWrap.remove();
+  const oldWrap = document.getElementById("item-btn-dashboard-wrap");
+  if (oldWrap) oldWrap.remove();
   if (_u && _u.rol !== "admin") {
-    // Verificar si ya está en el dashboard
     fetch(`/mi-dashboard/${_u.id}`)
       .then(r => r.json())
       .then(dashItems => {
@@ -100,6 +103,8 @@ function renderItem() {
   document.getElementById("item-body").style.display    = "";
 }
 
+// ── Columna de info ───────────────────────────────────────
+
 function renderInfoCol(color) {
   const col = document.getElementById("item-info-col");
   col.innerHTML = "";
@@ -126,12 +131,15 @@ function renderInfoCol(color) {
     </div>
   `);
 
-  if (cfg.usaEpisodios && item.temporadas?.length)   renderSeccionEpisodios(col, color);
-  if (cfg.usaTomos && item.tomos?.length)             renderSeccionManga(col, color);
-  if (cfg.usaCapitulos && item.capitulosTotales)      renderSeccionCapitulos(col, color);
-  if (cfg.usaPaginas && item.paginasTotales)          renderSeccionPaginas(col, color);
-  if (cfg.usaDlcs && item.dlcs?.length)               renderSeccionDlcs(col, color);
+  if (cfg.usaEpisodios && item.temporadas?.length)  renderSeccionEpisodios(col, color);
+  if (cfg.usaTomos && item.tomos?.length)            renderSeccionMangaConTab(col, color, undefined);
+  if (cfg.usaCapitulos && item.capitulosTotales)     renderSeccionCapitulos(col, color);
+  if (cfg.usaPaginas && item.paginasTotales)         renderSeccionPaginas(col, color);
+  if (cfg.usaDlcs && item.dlcs?.length)              renderSeccionDlcs(col, color);
+  if (item.relacionados?.length)                     renderSeccionRelacionados(col, color);
 }
+
+// ── Sección: Episodios / Temporadas ──────────────────────
 
 function renderSeccionEpisodios(col, color) {
   const temps = item.temporadas ?? [];
@@ -140,128 +148,254 @@ function renderSeccionEpisodios(col, color) {
     const label = t.tipo === "ova"      ? `OVA ${t.numero}`
                 : t.tipo === "especial" ? `ESP ${t.numero}`
                 : `T${t.numero}`;
-    return `<button class="item-tab ${i === tabActual ? "activo" : ""}"
-      style="${i === tabActual ? `background:${color};border-color:${color};color:#000` : ""}"
-      onclick="cambiarTabTemp(${i})">${label}</button>`;
+    const activo = i === tabActual;
+    return `<button class="item-tab ${activo ? "activo" : ""}"
+      style="${activo ? `background:${color};border-color:${color};color:#000` : ""}"
+      onclick="cambiarTabTemp(${i})">${label} <span style="font-size:0.58rem;opacity:0.7">${t.capitulos}</span></button>`;
   }).join("");
 
-  // Mostrar capítulos de todas las temporadas
-  const todasTempsHTML = temps.map((t, i) => {
-    const esActual = i === (item.progreso?.temporada ? item.progreso.temporada - 1 : 0);
-    const capsVistas = esActual
+  const temp = temps[tabActual] ?? temps[0];
+  let dotsHTML = "";
+  if (temp) {
+    const capsVistas = item.progreso?.temporada - 1 === tabActual
       ? (item.progreso?.capitulo ?? 0)
-      : (item.progreso?.temporada - 1 > i ? t.capitulos : 0);
-    const label = t.tipo === "ova"      ? `OVA ${t.numero}`
-                : t.tipo === "especial" ? `Especial ${t.numero}`
-                : `Temporada ${t.numero}`;
-    const dots = Array.from({length: t.capitulos}, (_, j) => {
+      : (item.progreso?.temporada - 1 > tabActual ? temp.capitulos : 0);
+
+    dotsHTML = Array.from({length: temp.capitulos}, (_, j) => {
       const n      = j + 1;
       const visto  = capsVistas >= n;
-      const actual = esActual && (item.progreso?.capitulo ?? 0) === n;
-      return `<div class="item-ep-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}"
-        style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40` : ""}"
+      const actual = capsVistas === n;
+      return `<div class="item-ep-dot ${visto ? "visto" : ""}"
+        style="${actual ? `background:${color};border-color:${color};color:#000;box-shadow:0 0 6px ${color}60` : visto ? `background:${color}30;border-color:${color}50;color:${color}` : ""}"
         title="Ep ${n}">${n}</div>`;
     }).join("");
-
-    return `
-      <div style="margin-bottom:1.25rem">
-        <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${color};margin-bottom:0.5rem">${label} <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:400">${t.capitulos} caps</span></div>
-        <div class="item-eps-grid">${dots}</div>
-      </div>`;
-  }).join("");
+  }
 
   const sec = document.createElement("div");
   sec.className = "item-section";
   sec.id = "sec-episodios";
   sec.innerHTML = `
     <div class="item-section-label">Temporadas</div>
-    ${todasTempsHTML}
+    <div class="item-tabs" style="margin-bottom:1rem">${tabsHTML}</div>
+    ${temp ? `
+      <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">
+        ${temp.tipo === "ova" ? `OVA ${temp.numero}` : temp.tipo === "especial" ? `Especial ${temp.numero}` : `Temporada ${temp.numero}`}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.5rem">${temp.capitulos} eps</span>
+      </div>
+      <div class="item-eps-grid">${dotsHTML}</div>
+    ` : ""}
   `;
   col.appendChild(sec);
 }
 
 function cambiarTabTemp(idx) {
   tabActual = idx;
+  const col = document.getElementById("item-info-col");
   const sec = document.getElementById("sec-episodios");
-  if (sec) sec.remove();
-  renderSeccionEpisodios(document.getElementById("item-info-col"), cfg.color);
+
+  // Crear la nueva sección
+  const color = cfg.color ?? "#888";
+  const temps = item.temporadas ?? [];
+  const tabsHTML = temps.map((t, i) => {
+    const label = t.tipo === "ova"      ? `OVA ${t.numero}`
+                : t.tipo === "especial" ? `ESP ${t.numero}`
+                : `T${t.numero}`;
+    const activo = i === idx;
+    return `<button class="item-tab ${activo ? "activo" : ""}"
+      style="${activo ? `background:${color};border-color:${color};color:#000` : ""}"
+      onclick="cambiarTabTemp(${i})">${label} <span style="font-size:0.58rem;opacity:0.7">${t.capitulos}</span></button>`;
+  }).join("");
+
+  const temp = temps[idx] ?? temps[0];
+  let dotsHTML = "";
+  if (temp) {
+    const capsVistas = item.progreso?.temporada - 1 === idx
+      ? (item.progreso?.capitulo ?? 0)
+      : (item.progreso?.temporada - 1 > idx ? temp.capitulos : 0);
+    dotsHTML = Array.from({length: temp.capitulos}, (_, j) => {
+      const n = j + 1;
+      const visto  = capsVistas >= n;
+      const actual = capsVistas === n;
+      return `<div class="item-ep-dot ${visto ? "visto" : ""}"
+        style="${actual ? `background:${color};border-color:${color};color:#000;box-shadow:0 0 6px ${color}60` : visto ? `background:${color}30;border-color:${color}50;color:${color}` : ""}"
+        title="Ep ${n}">${n}</div>`;
+    }).join("");
+  }
+
+  const nuevaSec = document.createElement("div");
+  nuevaSec.className = "item-section";
+  nuevaSec.id = "sec-episodios";
+  nuevaSec.innerHTML = `
+    <div class="item-section-label">Temporadas</div>
+    <div class="item-tabs" style="margin-bottom:1rem">${tabsHTML}</div>
+    ${temp ? `
+      <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">
+        ${temp.tipo === "ova" ? `OVA ${temp.numero}` : temp.tipo === "especial" ? `Especial ${temp.numero}` : `Temporada ${temp.numero}`}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.5rem">${temp.capitulos} eps</span>
+      </div>
+      <div class="item-eps-grid">${dotsHTML}</div>
+    ` : ""}
+  `;
+
+  // Reemplazar en el mismo lugar sin mover otras secciones
+  if (sec) {
+    col.replaceChild(nuevaSec, sec);
+  } else {
+    col.appendChild(nuevaSec);
+  }
+
+  tabActual = idx;
 }
 
-function renderSeccionManga(col, color) {
+// ── Sección: Manga / Tomos ────────────────────────────────
+
+function renderSeccionMangaConTab(col, color, tomoTabActual) {
   const tomos     = item.tomos ?? [];
   const capActual = item.progresoManga?.capituloActual ?? 0;
-  const capMax    = tomos[tomos.length-1]?.capituloFin ?? 0;
 
-  const tomosHTML = tomos.map(t => {
-    const esCurrent = capActual >= t.capituloInicio && capActual <= t.capituloFin;
-    const total = t.capituloFin - t.capituloInicio + 1;
-    const dots  = Array.from({length: total}, (_, i) => {
-      const n      = t.capituloInicio + i;
+  if (tomoTabActual === undefined) {
+    tomoTabActual = tomos.findIndex(t => capActual >= t.capituloInicio && capActual <= t.capituloFin);
+    if (tomoTabActual === -1) tomoTabActual = 0;
+  }
+  const tomoActivo = tomos[tomoTabActual];
+
+  const tabsHTML = tomos.map((t, i) => {
+    const activo = i === tomoTabActual;
+    return `<button class="item-tab ${activo ? "activo" : ""}"
+      style="${activo ? `background:${color};border-color:${color};color:#000` : ""}"
+      onclick="cambiarTabTomo(${i})">T${t.numero} <span style="font-size:0.58rem;opacity:0.7">${t.capituloFin - t.capituloInicio + 1}</span></button>`;
+  }).join("");
+
+  let dotsHTML = "";
+  if (tomoActivo) {
+    const total = tomoActivo.capituloFin - tomoActivo.capituloInicio + 1;
+    dotsHTML = Array.from({length: total}, (_, i) => {
+      const n      = tomoActivo.capituloInicio + i;
       const visto  = n <= capActual;
-      const actual = n === capActual;
-      return `<div class="item-ep-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}"
-        style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40` : ""}"
+      const esAct  = n === capActual;
+      return `<div class="item-ep-dot ${visto ? "visto" : ""}"
+        style="${esAct ? `background:${color};border-color:${color};color:#000;box-shadow:0 0 6px ${color}60` : visto ? `background:${color}30;border-color:${color}50;color:${color}` : ""}"
         title="Cap. ${n}">${n}</div>`;
     }).join("");
-
-    return `
-      <div style="margin-bottom:1.25rem">
-        <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${esCurrent ? color : "var(--muted)"};margin-bottom:0.5rem">
-          Tomo ${t.numero} <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:400">caps ${t.capituloInicio}–${t.capituloFin}</span>
-          ${esCurrent ? `<span style="font-size:0.65rem;color:${color};margin-left:0.5rem">← actual</span>` : ""}
-        </div>
-        <div class="item-eps-grid">${dots}</div>
-      </div>`;
-  }).join("");
+  }
 
   const sec = document.createElement("div");
   sec.className = "item-section";
+  sec.id = "sec-manga";
   sec.innerHTML = `
-    <div class="item-section-label">Tomos y capítulos</div>
-    ${tomosHTML}
+    <div class="item-section-label">Tomos</div>
+    <div class="item-tabs" style="margin-bottom:1rem">${tabsHTML}</div>
+    ${tomoActivo ? `
+      <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">
+        Tomo ${tomoActivo.numero}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.5rem">caps ${tomoActivo.capituloInicio}–${tomoActivo.capituloFin}</span>
+      </div>
+      <div class="item-eps-grid">${dotsHTML}</div>
+    ` : ""}
   `;
-  col.appendChild(sec);
+
+  const ref = document.getElementById("sec-capitulos")
+           ?? document.getElementById("sec-paginas")
+           ?? document.getElementById("sec-dlcs")
+           ?? document.getElementById("sec-relacionados")
+           ?? null;
+  ref ? col.insertBefore(sec, ref) : col.appendChild(sec);
 }
+
+function cambiarTabTomo(idx) {
+  const sec = document.getElementById("sec-manga");
+  if (sec) sec.remove();
+  renderSeccionMangaConTab(document.getElementById("item-info-col"), cfg.color, idx);
+}
+
+// ── Sección: Capítulos ────────────────────────────────────
 
 function renderSeccionCapitulos(col, color) {
   const actual = item.capituloActual ?? 0;
   const total  = item.capitulosTotales ?? 0;
   const pct    = total > 0 ? Math.min(100, Math.round((actual / total) * 100)) : 0;
 
-  const dots = Array.from({length: total}, (_, i) => {
-    const n     = i + 1;
-    const visto = n <= actual;
+  const GRUPO  = 10;
+  const grupos = Math.ceil(total / GRUPO);
+  const tabsHTML = Array.from({length: grupos}, (_, i) => {
+    const desde  = i * GRUPO + 1;
+    const hasta  = Math.min((i + 1) * GRUPO, total);
+    const activo = (actual >= desde && actual <= hasta) || (i === 0 && actual === 0);
+    return `<button class="item-tab ${activo ? "activo" : ""}"
+      style="${activo ? `background:${color};border-color:${color};color:#000` : ""}"
+      onclick="cambiarGrupoCaps(${i})">${desde}–${hasta}</button>`;
+  }).join("");
+
+  const grupoActual = actual === 0 ? 0 : Math.max(0, Math.ceil(actual / GRUPO) - 1);
+  const desde = grupoActual * GRUPO + 1;
+  const hasta  = Math.min((grupoActual + 1) * GRUPO, total);
+
+  const dotsHTML = Array.from({length: hasta - desde + 1}, (_, i) => {
+    const n      = desde + i;
+    const visto  = n <= actual;
+    const esAct  = n === actual;
     return `<div class="item-ep-dot ${visto ? "visto" : ""}"
-      style="${visto ? `background:${color}25;border-color:${color}40` : ""}"
+      style="${esAct ? `background:${color};border-color:${color};color:#000;box-shadow:0 0 6px ${color}60` : visto ? `background:${color}30;border-color:${color}50;color:${color}` : ""}"
       title="Cap. ${n}">${n}</div>`;
   }).join("");
 
   const sec = document.createElement("div");
   sec.className = "item-section";
+  sec.id = "sec-capitulos";
   sec.innerHTML = `
-    <div class="item-section-label">Capítulos</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Cap. ${actual} / ${total} (${pct}%)</div>
-    <div class="item-eps-grid">${dots}</div>
+    <div class="item-section-label">Capítulos — ${actual} / ${total} (${pct}%)</div>
+    ${grupos > 1 ? `<div class="item-tabs" style="margin-bottom:1rem">${tabsHTML}</div>` : ""}
+    <div class="item-eps-grid" id="caps-dots">${dotsHTML}</div>
   `;
   col.appendChild(sec);
 }
 
+function cambiarGrupoCaps(idx) {
+  const total  = item.capitulosTotales ?? 0;
+  const actual = item.capituloActual ?? 0;
+  const color  = cfg.color ?? "#888";
+  const GRUPO  = 10;
+  const desde  = idx * GRUPO + 1;
+  const hasta  = Math.min((idx + 1) * GRUPO, total);
+
+  const dotsHTML = Array.from({length: hasta - desde + 1}, (_, i) => {
+    const n     = desde + i;
+    const visto = n <= actual;
+    const esAct = n === actual;
+    return `<div class="item-ep-dot ${visto ? "visto" : ""}"
+      style="${esAct ? `background:${color};border-color:${color};color:#000;box-shadow:0 0 6px ${color}60` : visto ? `background:${color}30;border-color:${color}50;color:${color}` : ""}"
+      title="Cap. ${n}">${n}</div>`;
+  }).join("");
+
+  document.getElementById("caps-dots").innerHTML = dotsHTML;
+  document.querySelectorAll("#sec-capitulos .item-tab").forEach((btn, i) => {
+    const activo = i === idx;
+    btn.classList.toggle("activo", activo);
+    btn.style.background  = activo ? color : "";
+    btn.style.borderColor = activo ? color : "";
+    btn.style.color       = activo ? "#000" : "";
+  });
+}
+
+// ── Sección: Páginas ──────────────────────────────────────
+
 function renderSeccionPaginas(col, color) {
   const actual = item.paginaActual ?? 0;
   const total  = item.paginasTotales ?? 0;
-  const pct    = total > 0 ? Math.min(100, Math.round((actual / total) * 100)) : 0;
 
   const sec = document.createElement("div");
   sec.className = "item-section";
   sec.innerHTML = `
     <div class="item-section-label">Páginas</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Página ${actual} / ${total} (${pct}%)</div>
-    <div class="item-progress-wrap">
-      <div class="item-progress-fill" style="width:${pct}%;background:${color}"></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text)">
+      <span style="color:${color};font-size:1.4rem;font-family:'Bebas Neue',cursive;letter-spacing:1px">${actual}</span>
+      <span style="color:var(--muted);font-size:0.75rem"> / ${total} págs.</span>
     </div>
   `;
   col.appendChild(sec);
 }
+
+// ── Sección: DLCs ─────────────────────────────────────────
 
 function renderSeccionDlcs(col, color) {
   const rows = item.dlcs.map(d => `
@@ -274,9 +408,61 @@ function renderSeccionDlcs(col, color) {
 
   const sec = document.createElement("div");
   sec.className = "item-section";
+  sec.id = "sec-dlcs";
   sec.innerHTML = `<div class="item-section-label">DLCs / Ediciones</div>${rows}`;
   col.appendChild(sec);
 }
+
+// ── Sección: Relacionados ─────────────────────────────────
+
+function renderSeccionRelacionados(col, color) {
+  const sec = document.createElement("div");
+  sec.className = "item-section";
+  sec.id = "sec-relacionados";
+  sec.innerHTML = `
+    <div class="item-section-label">Relacionados</div>
+    <div id="rel-cards-wrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.75rem;margin-top:0.25rem">
+      <div style="color:var(--muted);font-size:0.78rem;grid-column:1/-1">Cargando...</div>
+    </div>`;
+  col.appendChild(sec);
+
+  fetch(`/items/bulk/${item.relacionados.join(",")}`)
+    .then(r => r.json())
+    .then(rels => {
+      const wrap = document.getElementById("rel-cards-wrap");
+      if (!wrap) return;
+      if (!rels.length) {
+        wrap.innerHTML = `<div style="color:var(--muted);font-size:0.78rem;grid-column:1/-1">Sin items relacionados</div>`;
+        return;
+      }
+      wrap.innerHTML = rels.map(r => {
+        const cfg2 = CONFIG[r.tipo];
+        const c2   = cfg2?.color ?? "#888";
+        return `
+          <div onclick="window.location.href='/pages/item.html?id=${r.id}'"
+            style="display:flex;flex-direction:column;background:var(--bg,#080a0f);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.15s"
+            onmouseover="this.style.borderColor='${c2}';this.style.transform='translateY(-3px)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+            <div style="aspect-ratio:2/3;background:var(--surface);overflow:hidden;position:relative;flex-shrink:0">
+              ${r.imagen
+                ? `<img src="${esc(r.imagen)}" style="width:100%;height:100%;object-fit:cover;display:block">`
+                : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem">${cfg2?.label.split(" ")[0] ?? "?"}</div>`}
+              <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:${c2}"></div>
+            </div>
+            <div style="padding:0.5rem 0.6rem;flex:1">
+              <div style="font-size:0.65rem;color:${c2};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem">${cfg2?.label.slice(2) ?? r.tipo}</div>
+              <div style="font-size:0.8rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(r.titulo)}</div>
+            </div>
+          </div>`;
+      }).join("");
+    })
+    .catch(() => {
+      const wrap = document.getElementById("rel-cards-wrap");
+      if (wrap) wrap.innerHTML = `<div style="color:var(--muted);font-size:0.78rem;grid-column:1/-1">Error cargando relacionados</div>`;
+    });
+}
+
+// ── Dashboard ─────────────────────────────────────────────
 
 async function agregarAlDashboard() {
   const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
@@ -291,7 +477,6 @@ async function agregarAlDashboard() {
     });
     if (res.ok) {
       const wrap = document.getElementById("item-btn-dashboard-wrap");
-      const color = cfg.color ?? "#888";
       if (wrap) wrap.innerHTML = `
         <div style="width:100%;padding:0.65rem 1rem;background:#22c55e10;border:1px solid #22c55e40;border-radius:8px;color:#22c55e;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:0.5rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
