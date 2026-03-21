@@ -204,12 +204,22 @@
 
       <!-- Columna derecha: info -->
       <div class="me-contenido">
-        <button class="close-btn" style="margin-left:auto;display:flex" onclick="cerrarModalExpandido()">✕</button>
+         <button class="close-btn" style="margin-left:auto;display:flex" onclick="cerrarModalExpandido()">✕</button>
 
-        <h2 class="me-titulo" id="me-titulo"></h2>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+            <h2 class="me-titulo" id="me-titulo" style="margin:0;flex:1"></h2>
+            <a id="btn-ir-item" href="#" target="_blank"
+                style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.75rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;text-decoration:none;transition:all 0.15s;white-space:nowrap;flex-shrink:0"
+                onmouseover="this.style.borderColor=config?.color??'var(--accent)';this.style.color=config?.color??'var(--accent)'"
+                onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+                Ver página ↗
+            </a>
+        </div>
 
         <div class="me-meta" id="me-meta"></div>
-        <div id="me-dlcs" class="oculto" style="margin-bottom:1.25rem"></div>
+        <div id="me-fecha-usuario" style="margin-bottom:1rem"></div>
+<div id="me-dlcs-usuario" class="oculto" style="margin-bottom:1.25rem"></div>
+        <div id="me-dlcs" class="oculto" style="margin-bottom:1.25rem" data-solo-admin="true"></div>
         
 
         <!-- Progreso episodios (series/animes) -->

@@ -92,6 +92,26 @@ document.addEventListener("click", (e) => {
     }
 });
 
+// Ocultar dropdowns al hacer scroll
+window.addEventListener("scroll", () => {
+    // Ocultar filtro dropdown
+    if (!filtroDropdown.classList.contains("oculto")) {
+        filtroDropdown.classList.add("oculto");
+        buscador.classList.remove("expandido");
+    }
+    // Ocultar resultados de búsqueda
+    if (portal.style.display !== "none") {
+        portal.style.display = "none";
+    }
+}, { passive: true });
+
+// Al hacer focus en el buscador, volver a mostrar resultados si hay texto
+buscador.addEventListener("focus", () => {
+    if (buscador.value.trim().length >= 2) {
+        ejecutarBusqueda();
+    }
+});
+
 filtroDropdown?.addEventListener("mousedown", (e) => {
     e.preventDefault();
 });
@@ -164,8 +184,6 @@ buscador.addEventListener("input", function () {
                 div.innerHTML = `
                     <span style="display:inline-flex;align-items:center">${tipoSVG(item.tipo, 14)}</span>
                     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.titulo}</span>
-                    <small style="color:${color}">${item.tipo}</small>
-                    ${val}
                 `;
 
                 div.addEventListener("click", () => {

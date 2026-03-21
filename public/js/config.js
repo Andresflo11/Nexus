@@ -111,10 +111,12 @@ const CONFIG = {
         usaPlataforma:  false,
         imagen:         "vertical",
         usaEpisodios:   false,
-        usaEstadoSerie: false,
-        usaCapitulos:   true,
+        usaEstadoSerie: true,
+        usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       false,
+        usaTomos:       true,
+        tomoLabel:      "Vol.",        // etiqueta para tabs
+        capituloLabel:  "Issues",       // etiqueta para subdivisiones
         creadorLabel:   "Autor",
         generosOpciones: ["Superhéroes", "Acción", "Aventura", "Ciencia Ficción", "Fantasía", "Terror", "Drama", "Humor", "Thriller", "Histórico", "Manga-estilo", "Indie"],
         plataformasOpciones: ["Físico", "Marvel Unlimited", "DC Universe Infinite", "ComiXology", "Webtoon", "Otro"]

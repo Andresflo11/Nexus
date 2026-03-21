@@ -12,6 +12,11 @@
                 </a>
                 <div style="height:1px;background:var(--border)"></div>
             </div>
+            <button onclick="abrirModalCuenta()" style="width:100%;padding:0.65rem 1rem;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:0.85rem;display:flex;align-items:center;gap:0.5rem" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                Cuenta
+            </button>
+            <div style="height:1px;background:var(--border)"></div>
             <div id="user-dropdown-admin" style="display:none">
                 <button onclick="abrirModalUsuarios()" style="width:100%;padding:0.65rem 1rem;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:0.85rem;display:flex;align-items:center;gap:0.5rem" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -19,6 +24,7 @@
                 </button>
                 <div style="height:1px;background:var(--border)"></div>
             </div>
+            
             
             <button onclick="confirmarCerrarSesion()" style="width:100%;padding:0.65rem 1rem;background:none;border:none;color:#ef4444;cursor:pointer;text-align:left;font-size:0.85rem;display:flex;align-items:center;gap:0.5rem" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -45,6 +51,10 @@
             <div style="margin-bottom:1.5rem">
               <label style="display:block;font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem">CONTRASEÑA</label>
               <input id="auth-password" type="password" placeholder="Tu contraseña" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem">
+              <input type="checkbox" id="auth-recordar" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
+              <label for="auth-recordar" style="font-size:0.78rem;color:var(--muted);cursor:pointer;user-select:none">Permanecer conectado</label>
             </div>
             <button onclick="hacerLogin()" style="width:100%;padding:0.75rem;background:var(--accent);color:#000;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;margin-bottom:1rem">Entrar</button>
             <div style="text-align:center;font-size:0.82rem;color:var(--muted)">¿No tienes cuenta? <button onclick="mostrarRegistro()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.82rem;padding:0;text-decoration:underline">Regístrate</button></div>
@@ -89,6 +99,65 @@
             <button onclick="cerrarModalUsuarios()" class="close-btn">✕</button>
           </div>
           <div id="lista-usuarios" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal cuenta -->
+    <div class="modal-overlay oculto" id="modal-cuenta">
+      <div class="modal-expandido-inner" style="max-width:420px;overflow-y:auto">
+        <div style="padding:2rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+            <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px">MI CUENTA</div>
+            <button onclick="cerrarModalCuenta()" class="close-btn">✕</button>
+          </div>
+          <div id="cuenta-error" style="display:none;color:#ef4444;font-size:0.8rem;margin-bottom:1rem;padding:0.5rem 0.75rem;background:#ef444415;border-radius:6px;border:1px solid #ef444430"></div>
+          <div id="cuenta-ok" style="display:none;color:#22c55e;font-size:0.8rem;margin-bottom:1rem;padding:0.5rem 0.75rem;background:#22c55e15;border-radius:6px;border:1px solid #22c55e30"></div>
+
+          <div style="margin-bottom:1.25rem">
+            <label style="display:block;font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em">Nombre de usuario</label>
+            <input id="cuenta-username" type="text" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+          </div>
+
+          <div style="height:1px;background:var(--border);margin-bottom:1.25rem"></div>
+          <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem">Cambiar contraseña <span style="font-size:0.68rem;opacity:0.6">(dejar vacío para no cambiar)</span></div>
+
+          <div style="margin-bottom:1rem">
+            <label style="display:block;font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em">Contraseña actual</label>
+            <input id="cuenta-pass-actual" type="password" placeholder="Tu contraseña actual" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+          </div>
+          <div style="margin-bottom:1rem">
+            <label style="display:block;font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em">Nueva contraseña</label>
+            <input id="cuenta-pass-nueva" type="password" placeholder="Nueva contraseña" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+          </div>
+          <div style="margin-bottom:1.5rem">
+            <label style="display:block;font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em">Confirmar nueva contraseña</label>
+            <input id="cuenta-pass-confirm" type="password" placeholder="Repite la nueva contraseña" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+          </div>
+
+          <button onclick="guardarCuenta()" style="width:100%;padding:0.75rem;background:var(--accent);color:#000;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem">Guardar cambios</button>
+          <div id="cuenta-btn-borrar-wrap" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+            <button onclick="confirmarBorrarCuenta()" style="width:100%;padding:0.65rem;background:#ef444415;border:1px solid #ef444430;color:#ef4444;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600">Eliminar mi cuenta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal confirmar borrar cuenta propia -->
+    <div class="modal-overlay oculto" id="modal-borrar-cuenta">
+      <div class="modal-expandido-inner" style="max-width:360px">
+        <div style="padding:2rem;text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:#ef444420;border:1px solid #ef444440;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;margin-bottom:0.5rem">ELIMINAR CUENTA</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem">Se borrarán tu cuenta y todo tu progreso. Esta acción no se puede deshacer.</div>
+          <div style="margin-bottom:1.5rem">
+            <input id="borrar-cuenta-pass" type="password" placeholder="Confirma tu contraseña" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;box-sizing:border-box">
+            <div id="borrar-cuenta-error" style="display:none;color:#ef4444;font-size:0.78rem;margin-top:0.4rem"></div>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button onclick="cerrarModalBorrarCuenta()" style="flex:1;padding:0.65rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:0.88rem">Cancelar</button>
+            <button onclick="ejecutarBorrarCuenta()" style="flex:1;padding:0.65rem;background:#ef444420;border:1px solid #ef444440;border-radius:8px;color:#ef4444;cursor:pointer;font-size:0.88rem;font-weight:600">Eliminar</button>
+          </div>
         </div>
       </div>
     </div>

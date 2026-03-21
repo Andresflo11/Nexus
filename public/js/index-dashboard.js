@@ -5,8 +5,10 @@
 const TIPOS = ["juegos", "peliculas", "series", "animes", "mangas", "comics", "libros"];
 let todosLosItems = [];
 
+const _getNexusUser = () => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } };
+
 function actualizarItemSilencioso(item) {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = _getNexusUser();
     if (_u && _u.rol !== "admin") {
         fetch(`/progreso/${_u.id}/${item.id}`, {
             method: "PUT",
@@ -24,7 +26,7 @@ function actualizarItemSilencioso(item) {
 
 async function cargarDashboard() {
     try {
-        const user    = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        const user    = _getNexusUser();
         const esAdmin = !user || user.rol === "admin";
 
         const btnAnadir = document.getElementById("dash-btn-anadir");
@@ -42,10 +44,11 @@ async function cargarDashboard() {
             const progrMap = await progRes.json();
 
             items = items.map(item => {
-                const p = progrMap[item.id];
+                const p   = progrMap[item.id];
+                const cfg = CONFIG[item.tipo] ?? {};
                 return {
                     ...item,
-                    estado:         p?.estado          ?? null,
+                    estado:         p?.estado          ?? cfg.estados?.[0] ?? null,
                     valoracion:     p?.valoracion       ?? 0,
                     capituloActual: p?.capituloActual   ?? 0,
                     paginaActual:   p?.paginaActual     ?? 0,
@@ -170,7 +173,7 @@ function cardHTML(item, idx) {
     const valColor = valoracionColor(item.valoracion);
     const valLabel = valoracionLabel(item.valoracion);
     const rating   = item.valoracion > 0 ? `<div class="card-rating-badge" style="background:${valColor}25;color:${valColor}">${valLabel}</div>` : "";
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = _getNexusUser();
     const esAdmin = !_u || _u.rol === "admin";
 
     return `
@@ -182,15 +185,12 @@ function cardHTML(item, idx) {
       <div class="card-info">
         <div class="card-title">${esc(item.titulo)}</div>
         <div class="card-meta">
-          <span class="card-tag tag-estado">${esc(item.estado ?? "Sin estado")}</span>
-          ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
+          <div class="card-bloque">
+            <div class="card-bloque-label">Estado</div>
+            <span class="card-tag tag-estado">${esc(item.estado ?? "Sin estado")}</span>
+          </div>
         </div>
-        <div class="card-bottom">
-          ${!esAdmin ? `
-            <div class="card-actions">
-              <button class="card-btn danger" title="Quitar de mi dashboard" onclick="event.stopPropagation();quitarDeDashboardIndex(${item.id}, this)">✕ Quitar</button>
-            </div>` : ""}
-        </div>
+        <div class="card-bottom"></div>
       </div>
     </article>`;
 }
@@ -202,7 +202,7 @@ function marcarSidebarActivo() {
 }
 
 async function quitarDeDashboardIndex(itemId, btn) {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = _getNexusUser();
     if (!_u) return;
     if (btn) { btn.disabled = true; btn.textContent = "..."; }
     try {

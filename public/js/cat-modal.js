@@ -21,6 +21,7 @@ let meTabActual         = 0;      // índice del tab de temporada activo
 let meItemIdRenderizado = null;   // id del item que tiene el DOM renderizado
 let meTabRenderizado    = -1;     // índice del tab que está en el DOM
 let meInnerHTMLOriginal = "";     // HTML original del modal (antes de entrar en edición)
+let meDatosUsuario = null;  // { fecha_agregado, dlcs_usuario } del dashboard
 
 // ── Abrir modal expandido ─────────────────────────────────
 // Se llama al hacer click en el póster de una card.
@@ -39,6 +40,7 @@ function abrirModalExpandido(id) {
     }
 
     meItemActual = item;
+    meDatosUsuario  = null;
     meTabActual  = item.progreso?.temporada ? item.progreso.temporada - 1 : 0;
 
     const color = config.color ?? "#888";
@@ -61,6 +63,13 @@ function abrirModalExpandido(id) {
 
     // Título
     document.getElementById("me-titulo").textContent = item.titulo;
+    const btnIrItem = document.getElementById("btn-ir-item");
+    if (btnIrItem) {
+        const paginaActual = window.location.pathname.split("/").pop() || "index.html";
+        const origen = encodeURIComponent(window.location.pathname + window.location.search);
+        btnIrItem.href = `/pages/item.html?id=${item.id}&origen=${origen}`;
+        btnIrItem.removeAttribute("target"); // nunca abrir en pestaña nueva
+    }
 
     // Tags de metadata (fecha, plataforma, estadoSerie, estado, logros)
     function meBloque(label, valor, valorColor) {
@@ -70,18 +79,19 @@ function abrirModalExpandido(id) {
         </div>`;
     }
     const metaHTML = [];
-    if (item.fecha) {
-        const [y, m, d] = item.fecha.split("-");
+    const fechaSrc = meDatosUsuario?.fecha_agregado ?? item.fecha;
+    if (fechaSrc) {
+        const [y, m, d] = fechaSrc.split("-");
         const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        metaHTML.push(meBloque("Fecha", `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`));
+        metaHTML.push(meBloque("Fecha agregada", `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`));
     }
     const plats = (()=>{ if(!item.plataforma||item.plataforma==="null") return []; if(Array.isArray(item.plataforma)) return item.plataforma.filter(Boolean); return [item.plataforma]; })();
     if (item.tipo !== "juegos") plats.forEach(p => metaHTML.push(meBloque("Plataforma", esc(p), color)));
     if (item.estadoSerie && item.estadoSerie !== "null") metaHTML.push(meBloque("Estado de la obra", esc(item.estadoSerie), "#4ade80"));
     if (item.estado) metaHTML.push(meBloque("Tu estado", esc(item.estado), color));
-    if (config.usalogros) {
+    if (config.usalogros && item.logros) {
         const logrosColor = { "Todos completados":"#64dd17","Algunos completados":"var(--accent)","En proceso":"#ff6b35","Sin completar":"#9ca3af","No tiene logros":"#6b7280" }[item.logros] ?? "#6b7280";
-        const emoji = item.logros === "Todos completados" ? "🏆 " : "";
+        const emoji = item.logros === "Todos completados" ? "" : "";
         metaHTML.push(meBloque("Logros", `${emoji}${item.logros ?? "No tiene logros"}`, logrosColor));
     }
     if (config.usaDlcs && item.dlcs?.length) {
@@ -92,7 +102,7 @@ function abrirModalExpandido(id) {
         <div style="display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border)">
             <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);min-width:36px">${esc(d.tipo ?? "DLC")}</span>
             <span style="font-size:0.82rem;flex:1">${esc(d.nombre)}</span>
-            ${hayLogros ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${logrosColor(d.logros)};letter-spacing:1px;line-height:1;min-width:80px;text-align:right">${d.logros === "Todos completados" ? "🏆 " : ""}${d.logros ?? ""}</span>` : ""}
+            ${hayLogros ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${logrosColor(d.logros)};letter-spacing:1px;line-height:1;min-width:80px;text-align:right">${d.logros === "Todos completados" ? "" : ""}${d.logros ?? ""}</span>` : ""}
             ${hayEstado ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${color};letter-spacing:1px;line-height:1;min-width:70px;text-align:right">${esc(d.estado ?? "")}</span>` : ""}
         </div>`).join("");
 
@@ -105,6 +115,9 @@ function abrirModalExpandido(id) {
             ${hayEstado ? `<span style="${labelStyle};min-width:70px;text-align:right">Estado</span>` : ""}
         </div>
         ${dlcHTML}`;
+    const _uAdmin = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const dlcsEl = document.getElementById("me-dlcs");
+    if (dlcsEl) dlcsEl.classList.toggle("oculto", _uAdmin?.rol !== "admin");
     document.getElementById("me-dlcs").classList.remove("oculto");
     } else {
     document.getElementById("me-dlcs")?.classList.add("oculto");
@@ -143,7 +156,10 @@ function abrirModalExpandido(id) {
         meRenderTabs(color);
     }
     if (config.usaTomos) {
-    const tomos     = item.tomos ?? [];
+    const tomos      = item.tomos ?? [];
+    const tomoLabel  = config.tomoLabel     ?? "T";
+    const capLabel   = config.capituloLabel ?? "Cap.";
+    const secLabel   = config.tomoLabel     ? "Volúmenes" : "Tomos";
     const capActual = item.progresoManga?.capituloActual ?? 0;
     const tomoActual = capActual === 0
                     ? (tomos[0] ?? null)
@@ -158,22 +174,24 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
     bloqueTomos.classList.remove("oculto");
 
     // Tabs de tomos
+    const tomoNombre = config.tomoLabel ? "Volumen" : "Tomo";
+
     const tabsHTML = tomos.map((t, i) => `
     <button type="button" class="me-tab ${t === tomoActual ? "activo" : ""}" 
         style="${t === tomoActual ? `background:${color};border-color:${color};color:#000` : ""}"
         onclick="meCambiarTabManga(${i})">
-        T${t.numero}
+        ${tomoLabel}${t.numero}
     </button>`).join("");
 
     bloqueTomos.innerHTML = `
     <div class="me-progreso-header">
         <span class="me-info-tomo" id="me-progreso-texto-manga">
-            ${tomoActual ? `Tomo ${tomoActual.numero}` : "Sin tomos"} · Cap ${capActual}
-            ${tomoActual && capFin ? `— ${pct}% del tomo` : ""}
+            ${tomoActual ? `${tomoNombre} ${tomoActual.numero}` : `Sin ${secLabel.toLowerCase()}`}
+            ${tomoActual && capFin ? `— ${pctGlobal}%` : ""}
         </span>
         <div class="progress-btns">
             <button class="prog-btn" onclick="mecambiarCapituloManga(-1, ${item.id})">−</button>
-            <span class="prog-num" id="me-cap-manga-texto">Cap. ${capActual}</span>
+            <span class="prog-num" id="me-cap-manga-texto">${capLabel} ${capActual}</span>
             <button class="prog-btn" onclick="mecambiarCapituloManga(1, ${item.id})">+</button>
         </div>
     </div>
@@ -201,8 +219,87 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
     // Mostrar botón editar solo si es admin
     const btnEditar = document.getElementById("btn-editar-modal");
     if (btnEditar) {
-        const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
-        btnEditar.style.display = (_u && _u.rol === "admin") ? "" : "none";
+        const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        if (_u?.rol === "admin") {
+            btnEditar.style.display = "";
+            btnEditar.textContent = "✏ Editar todos los campos";
+        } else if (_u) {
+            btnEditar.style.display = "";
+            btnEditar.textContent = "✏ Editar mi progreso";
+        } else {
+            btnEditar.style.display = "none";
+        }
+    }
+
+    const _uDash = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    if (_uDash && _uDash.rol !== "admin") {
+        fetch(`/mi-dashboard/${_uDash.id}`)
+            .then(r => r.json())
+            .then(items => {
+                const d = items.find(i => i.id === item.id);
+                meDatosUsuario = d
+                    ? { fecha_agregado: d.fecha_agregado, dlcs_usuario: d.dlcs_usuario, logros: d.logros_usuario }
+                    : null;
+
+                // ── Re-renderizar me-meta ──────────────────
+                const metaEl = document.getElementById("me-meta");
+                if (metaEl) {
+                    function mb(label, valor, vc) {
+                        return `<div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:0.15rem">${label}</div>
+                            <span style="font-family:'Bebas Neue',cursive;font-size:1.6rem;color:${vc??"var(--text)"};letter-spacing:1.5px;line-height:1">${valor}</span>
+                        </div>`;
+                    }
+                    const metas = [];
+                    const fs = meDatosUsuario?.fecha_agregado;
+                    if (fs) {
+                        const [fy,fm,fd] = fs.split("-");
+                        const mm = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+                        metas.push(mb("Fecha agregada", `${parseInt(fd)} ${mm[parseInt(fm)-1]} ${fy}`));
+                    }
+                    if (item.tipo !== "juegos") {
+                        const pl = (()=>{ if(!item.plataforma||item.plataforma==="null") return []; if(Array.isArray(item.plataforma)) return item.plataforma.filter(Boolean); return [item.plataforma]; })();
+                        pl.forEach(p => metas.push(mb("Plataforma", p, color)));
+                    }
+                    if (item.estadoSerie && item.estadoSerie !== "null") metas.push(mb("Estado de la obra", item.estadoSerie, "#4ade80"));
+                    if (item.estado) metas.push(mb("Tu estado", item.estado, color));
+                    if (config.usalogros) {
+                        const lv = meDatosUsuario !== null ? (meDatosUsuario?.logros || null) : (item.logros || null);
+                        if (lv) {
+                            const lc = {"Todos completados":"#64dd17","Algunos completados":"var(--accent)","En proceso":"#ff6b35","Sin completar":"#9ca3af","No tiene logros":"#6b7280"}[lv] ?? "#6b7280";
+                            metas.push(mb("Logros", `${lv==="Todos completados"?"":""}${lv}`, lc));
+                        }
+                    }
+                    metaEl.innerHTML = `<div style="display:flex;gap:1.5rem;flex-wrap:wrap">${metas.join("")}</div>`;
+                }
+                document.getElementById("me-dlcs")?.classList.add("oculto");
+                // ── Re-renderizar me-dlcs-usuario ──────────
+                const secDlc = document.getElementById("me-dlcs-usuario");
+                if (!secDlc || !config.usaDlcs || !item.dlcs?.length) return;
+                const dlcsU = meDatosUsuario?.dlcs_usuario ?? {};
+                const logrosColor = l => ({"Todos completados":"#64dd17","Algunos completados":"var(--accent)","En proceso":"#ff6b35","Sin completar":"#9ca3af","No tiene logros":"#6b7280"})[l] ?? "#6b7280";
+                const hayLogros = item.dlcs.some((_, i) => dlcsU[i]?.logros);
+                const hayEstado = item.dlcs.some((_, i) => dlcsU[i]?.estado);
+                if (!hayLogros && !hayEstado) { secDlc.classList.add("oculto"); return; }
+                const labelStyle = "font-family:'JetBrains Mono',monospace;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)";
+                const rows = item.dlcs.map((d, i) => {
+                    const du = dlcsU[i] ?? {};
+                    return `<div style="display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border)">
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);min-width:36px">${esc(d.tipo??"DLC")}</span>
+                        <span style="font-size:0.82rem;flex:1">${esc(d.nombre)}</span>
+                        ${hayLogros ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${logrosColor(du.logros)};letter-spacing:1px;line-height:1;min-width:80px;text-align:right">${du.logros==="Todos completados"?"":""}${du.logros??""}</span>` : ""}
+                        ${hayEstado ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${color};letter-spacing:1px;line-height:1;min-width:70px;text-align:right">${esc(du.estado??"")}</span>` : ""}
+                    </div>`;
+                }).join("");
+                secDlc.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:0.75rem;padding-bottom:0.35rem;border-bottom:1px solid var(--border2);margin-bottom:0.1rem">
+                        <span style="${labelStyle};min-width:36px">Tipo</span>
+                        <span style="${labelStyle};flex:1">Nombre</span>
+                        ${hayLogros ? `<span style="${labelStyle};min-width:80px;text-align:right">Logros</span>` : ""}
+                        ${hayEstado ? `<span style="${labelStyle};min-width:70px;text-align:right">Estado</span>` : ""}
+                    </div>${rows}`;
+                secDlc.classList.remove("oculto");
+            }).catch(() => {});
     }
 
     // ── Relacionados ──────────────────────────────────────
@@ -211,7 +308,7 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
     if (relacionados.length && secRel) {
         secRel.classList.remove("oculto");
         secRel.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Relacionados</div>
-        <div id="me-rel-cards" style="display:flex;flex-direction:column;gap:0.5rem">
+        <div id="me-rel-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0.5rem">
             <div style="color:var(--muted);font-size:0.78rem">Cargando...</div>
         </div>`;
         fetch(`/items/bulk/${relacionados.join(",")}`)
@@ -219,14 +316,15 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
             .then(rels => {
                 const html = rels.map(r => {
                     const cfg2 = CONFIG[r.tipo];
-                    return `<div onclick="abrirModalExpandido(${r.id})" style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s"
-                        onmouseover="this.style.borderColor='${cfg2?.color ?? color}60'" onmouseout="this.style.borderColor='var(--border)'">
-                        ${r.imagen ? `<img src="${r.imagen}" style="width:32px;height:46px;object-fit:cover;border-radius:5px;flex-shrink:0">` : `<span style="font-size:1.3rem;flex-shrink:0">${cfg2?.label.split(" ")[0] ?? "?"}</span>`}
-                        <div style="min-width:0">
-                            <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.titulo)}</div>
-                            <div style="font-size:0.65rem;color:${cfg2?.color ?? "var(--muted)"};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;margin-top:0.15rem">${cfg2?.label.slice(2) ?? r.tipo}</div>
+                    return `<div onclick="abrirModalExpandido(${r.id})" style="display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color 0.2s,transform 0.15s;overflow:hidden"
+                        onmouseover="this.style.borderColor='${cfg2?.color ?? color}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+                        ${r.imagen
+                            ? `<img src="${r.imagen}" style="width:100%;aspect-ratio:2/3;object-fit:cover;display:block">`
+                            : `<div style="width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--bg)">${cfg2?.label.split(" ")[0] ?? "?"}</div>`}
+                        <div style="padding:0.4rem 0.45rem">
+                            <div style="font-size:0.68rem;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(r.titulo)}</div>
+                            <div style="font-size:0.55rem;color:${cfg2?.color ?? "var(--muted)"};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem">${cfg2?.label.slice(2) ?? r.tipo}</div>
                         </div>
-                        <span class="me-tag me-tag-estado" style="margin-left:auto;flex-shrink:0;font-size:0.6rem">${esc(r.estado ?? "")}</span>
                     </div>`;
                 }).join("");
                 const cont = document.getElementById("me-rel-cards");
@@ -278,8 +376,10 @@ function mecambiarCapituloManga(dir, id) {
     item.progresoManga = { capituloActual: capActual };
 
     // Calcular tomo actual
-    const tomoActual = tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
-                    ?? tomos[tomos.length - 1];
+    const tomoActual = capActual === 0
+        ? tomos[0]
+        : (tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
+           ?? tomos[tomos.length - 1]);
     const capInicio  = tomoActual?.capituloInicio ?? 1;
     const capFin     = tomoActual?.capituloFin    ?? capMax;
     const pct        = Math.round(((capActual - capInicio + 1) / (capFin - capInicio + 1)) * 100);
@@ -290,9 +390,14 @@ function mecambiarCapituloManga(dir, id) {
 const barraModal = document.getElementById("me-barra-manga");
 const infoModal  = document.getElementById("me-progreso-texto-manga");
 
-if (textoModal) textoModal.textContent = `Cap. ${capActual}`;
+const _tL = CONFIG[item.tipo]?.tomoLabel ?? "T";
+const _cL = CONFIG[item.tipo]?.capituloLabel ?? "Cap.";
+const _cfg       = CONFIG[item.tipo] ?? {};
+const _tomoNombre = _cfg.tomoLabel ? "Volumen" : "Tomo";
+const _capLabel   = _cfg.capituloLabel ?? "Cap.";
+if (textoModal) textoModal.textContent = `${_capLabel} ${capActual}`;
 if (barraModal) barraModal.style.width = `${pctGlobal}%`;
-if (infoModal)  infoModal.textContent  = `Tomo ${tomoActual?.numero ?? "?"} · Cap ${capActual} — ${pct}% del tomo`;
+if (infoModal)  infoModal.textContent  = `${_tomoNombre} ${tomoActual?.numero ?? "?"} — ${pctGlobal}%`;
     // Guardar silenciosamente
     const idx = dataOriginal.findIndex(i => i.id === item.id);
 if (idx !== -1) dataOriginal[idx].progresoManga = item.progresoManga;
@@ -302,8 +407,10 @@ parchearProgresoManga(item.id);
 // Actualizar tabs y dots si el modal está abierto
 if (meItemActual?.id === item.id && document.getElementById("me-tabs-manga")) {
     const tomos      = item.tomos ?? [];
-    const tomoActual = tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
-                    ?? tomos[tomos.length - 1];
+    const tomoActual = capActual === 0
+        ? tomos[0]
+        : (tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
+           ?? tomos[tomos.length - 1]);
     const tomoIdx    = tomos.indexOf(tomoActual);
 
     // Detectar si cambió de tomo para animar
@@ -353,6 +460,8 @@ function meAbrirEdicion() {
     const id   = meItemActual?.id;
     const item = dataOriginal.find(i => i.id === id);
     if (!item) return;
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const esAdmin = _u?.rol === "admin";
 
     const inner = document.querySelector(".modal-expandido-inner");
     inner.innerHTML = `
@@ -360,15 +469,22 @@ function meAbrirEdicion() {
             background-image:${item.imagen ? `url('${esc(item.imagen)}')` : 'none'};
             opacity:${item.imagen ? 1 : 0}">
         </div>
-        <div style="position:relative;z-index:1;padding:2rem 2.5rem;max-height:92vh;overflow-y:auto">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
-                <span class="modal-title">EDITAR — ${esc(item.titulo)}</span>
-                <button class="close-btn" onclick="meVolverDesdeEdicion(${id})">✕</button>
+        <div style="position:relative;z-index:1;padding:2.5rem 0;max-height:96vh;overflow-y:auto;
+            display:flex;flex-direction:column;align-items:center">
+            <div style="width:100%;max-width:${esAdmin ? "100%" : "720px"};padding:0 2rem">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+                    <span class="modal-title">${esAdmin ? "EDITAR — " : "MI PROGRESO — "}${esc(item.titulo)}</span>
+                    <button class="close-btn" onclick="meVolverDesdeEdicion(${id})">✕</button>
+                </div>
+                <div id="me-form-contenido" style="display:grid;grid-template-columns:${esAdmin ? "repeat(auto-fill,minmax(220px,1fr))" : "1fr"};gap:0.75rem"></div>
             </div>
-            <div id="me-form-contenido" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.75rem"></div>
         </div>`;
 
-    activarEdicionEnModal(id);
+    if (esAdmin) {
+        activarEdicionEnModal(id);
+    } else {
+        activarEdicionUsuario(id, _u.id);
+    }
 }
 
 // ── Volver desde edición al modal normal ──────────────────
@@ -381,14 +497,26 @@ function meVolverDesdeEdicion(id) {
 
     abrirModalExpandido(id);
 }
-
+function meActualizarMetaEstado(valor) {
+    const metaEl = document.getElementById("me-meta");
+    if (!metaEl) return;
+    // Buscar el bloque "Tu estado" y actualizarlo
+    const bloques = metaEl.querySelectorAll("div > div");
+    bloques.forEach(bloque => {
+        const label = bloque.querySelector("div");
+        if (label && label.textContent.trim().toUpperCase() === "TU ESTADO") {
+            const span = bloque.querySelector("span");
+            if (span) span.textContent = valor;
+        }
+    });
+}
 // ── Guardar un campo rápido (estado o valoración) ─────────
 // Se llama desde los select del modal sin entrar en modo edición.
 function meGuardarCampo(campo, valor) {
     if (!meItemActual) return;
     meItemActual[campo] = valor;
 
-    // Si cambió el estado, actualizar el botón completar
+    // Si cambió el estado, actualizar botón completar y me-meta
     if (campo === "estado") {
         const yaCompleto = config.estadosCompletados?.includes(valor);
         const estadoComp = config.estadosCompletados?.[0];
@@ -399,6 +527,7 @@ function meGuardarCampo(campo, valor) {
             btn.style.background   = yaCompleto ? color : "transparent";
             btn.style.color        = yaCompleto ? "#000" : color;
         }
+        meActualizarMetaEstado(valor);
     }
 
     // Sincronizar dataOriginal
@@ -580,7 +709,7 @@ function cambiarEpisodio(id, delta) {
     }
     if (capitulo < 1) {
         if (temporada > 1) { temporada--; capitulo = item.temporadas[temporada - 1].capitulos; }
-        else { capitulo = 1; }
+        else { capitulo = 0; }
     }
 
     item.progreso = { temporada, capitulo };
@@ -637,7 +766,7 @@ const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
                  : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
                  : tempActual?.tipo === "pelicula" ? `PEL ${tempActual.numero}`
                  : `T${item.progreso.temporada}`;
-card.querySelector(".progress-info").textContent = `${labelTemp} · Ep ${item.progreso.capitulo}`;
+card.querySelector(".progress-info").textContent = `${labelTemp} (${pct}%)`;
     card.querySelector(".progress-wrap").style.setProperty("--pct", `${pct}%`);
     card.querySelector(".prog-num").textContent = `Ep ${item.progreso.capitulo}`;
 }
@@ -681,10 +810,13 @@ function parchearProgresoManga(id) {
     const numEl  = card.querySelector(".prog-num");
     const wrapEl = card.querySelector(".progress-wrap");
 
-    if (infoEl) infoEl.textContent = `Tomo ${tomoActual?.numero ?? "?"} · Cap ${capActual} (${pct}%)`;
+    const _cfg      = CONFIG[item.tipo] ?? {};
+    const tomoNombre = _cfg.tomoLabel     ? "Volumen" : "Tomo";
+    const capLabel   = _cfg.capituloLabel ?? "Cap";
+    if (infoEl) infoEl.textContent = `${tomoNombre} ${tomoActual?.numero ?? "?"} (${pct}%)`;
     if (fillEl) fillEl.style.width = `${pct}%`;
     if (wrapEl) wrapEl.style.setProperty("--pct", `${pct}%`);
-    if (numEl)  numEl.textContent  = `Cap ${capActual}`;
+    if (numEl)  numEl.textContent  = `${capLabel} ${capActual}`;
 }
 
 // Cambiar tab de tomo
@@ -702,10 +834,16 @@ function meCambiarTabManga(idx) {
 
 // Renderizar dots de capítulos de un tomo
 function meRenderTabManga(idx, animar = true) {
-    const item      = meItemActual;
-    const tomos     = item?.tomos ?? [];
-    const tomo      = tomos[idx];
+    const item       = meItemActual;
+    const tomos      = item?.tomos ?? [];
+    const tomo       = tomos[idx];
     if (!tomo) return;
+
+    const _cfg       = CONFIG[item.tipo] ?? {};
+    const tomoNombre = _cfg.tomoLabel     ? "Volumen" : "Tomo";
+    const tomoLabel  = _cfg.tomoLabel     ?? "T";
+    const capLabel   = _cfg.capituloLabel ?? "Cap.";
+    const capsNombre = _cfg.capituloLabel ? _cfg.capituloLabel.toLowerCase() + "s" : "capítulos";
 
     const capActual = item.progresoManga?.capituloActual ?? 0;
     const total     = tomo.capituloFin - tomo.capituloInicio + 1;
@@ -713,13 +851,13 @@ function meRenderTabManga(idx, animar = true) {
     if (!contenedor) return;
 
     const caps = Array.from({ length: total }, (_, i) => {
-        const numCap  = tomo.capituloInicio + i;
-        const visto   = numCap <= capActual;
-const actual  = numCap === capActual;
-const color   = CONFIG[tipo]?.color ?? "#888";
-return `<div class="me-cap-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}" 
-    style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40;color:#fff` : ""}"
-    title="Cap. ${numCap}">${numCap}</div>`;
+        const numCap = tomo.capituloInicio + i;
+        const visto  = numCap <= capActual;
+        const actual = numCap === capActual;
+        const color  = CONFIG[tipo]?.color ?? "#888";
+        return `<div class="me-cap-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}" 
+            style="${actual ? `background:${color};border-color:${color};color:#000` : visto ? `background:${color}25;border-color:${color}40;color:#fff` : ""}"
+            title="${capLabel} ${numCap}">${numCap}</div>`;
     }).join("");
 
     const esTomoCurrent = capActual >= tomo.capituloInicio && capActual <= tomo.capituloFin;
@@ -727,10 +865,72 @@ return `<div class="me-cap-dot ${visto ? "visto" : ""} ${actual ? "actual" : ""}
     contenedor.innerHTML = `
     <div class="${animar ? "me-temp-info" : ""}" style="margin-top:0.75rem">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text)">Tomo ${tomo.numero}</span>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted)">${total} capítulos</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text)">${tomoNombre} ${tomo.numero}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted)">${total} ${capsNombre}</span>
             </div>
             <div class="me-caps-grid">${caps}</div>
-            ${esTomoCurrent ? `<div style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem">← Tomo actual</div>` : ""}
+            ${esTomoCurrent ? `<div style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem">← ${tomoNombre} actual</div>` : ""}
         </div>`;
+
+        function meRenderDatosUsuario(item, config, color, userId) {
+    // Fecha editable
+    const fechaEl = document.getElementById("me-fecha-usuario");
+    if (fechaEl) {
+        const val = meDatosUsuario?.fecha_agregado ?? "";
+        fechaEl.innerHTML = `
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:0.3rem">Fecha agregada</div>
+            <input type="date" value="${val}" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.3rem 0.6rem;outline:none"
+                onchange="meGuardarDatoUsuario(${userId},${item.id},'fecha_agregado',this.value)">`;
+    }
+
+    // DLCs editables (estado y logros por DLC)
+    if (!config.usaDlcs || !item.dlcs?.length) return;
+    const secDlc = document.getElementById("me-dlcs-usuario");
+    if (!secDlc) return;
+    const dlcsU = meDatosUsuario?.dlcs_usuario ?? {};
+    const labelStyle = "font-family:'JetBrains Mono',monospace;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)";
+    const logrosOpts = ["","Sin completar","En proceso","Algunos completados","Todos completados","No tiene logros"];
+    const estadosOpts = config.estados ?? [];
+
+    const rows = item.dlcs.map((d, i) => {
+        const du = dlcsU[i] ?? {};
+        return `<div style="display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border)">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);min-width:36px">${esc(d.tipo ?? "DLC")}</span>
+            <span style="font-size:0.82rem;flex:1">${esc(d.nombre)}</span>
+            <select onchange="meGuardarDlcUsuario(${userId},${item.id},${i},'logros',this.value)"
+                style="font-size:0.72rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0.2rem 0.4rem;font-family:'DM Sans',sans-serif">
+                ${logrosOpts.map(o => `<option value="${o}" ${du.logros===o?"selected":""}>${o||"— Logros —"}</option>`).join("")}
+            </select>
+            <select onchange="meGuardarDlcUsuario(${userId},${item.id},${i},'estado',this.value)"
+                style="font-size:0.72rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:${color};padding:0.2rem 0.4rem;font-family:'DM Sans',sans-serif">
+                ${estadosOpts.map(o => `<option value="${o}" ${du.estado===o?"selected":""}>${o}</option>`).join("")}
+            </select>
+        </div>`;
+    }).join("");
+
+    secDlc.innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.75rem;padding-bottom:0.35rem;border-bottom:1px solid var(--border2);margin-bottom:0.1rem">
+            <span style="${labelStyle};min-width:36px">Tipo</span>
+            <span style="${labelStyle};flex:1">Nombre</span>
+            <span style="${labelStyle};min-width:120px;text-align:right">Logros</span>
+            <span style="${labelStyle};min-width:100px;text-align:right">Estado</span>
+        </div>${rows}`;
+    secDlc.classList.remove("oculto");
+}
+
+async function meGuardarDatoUsuario(userId, itemId, campo, valor) {
+    const body = { [campo]: valor };
+    if (campo !== "fecha_agregado") return;
+    if (!meDatosUsuario) meDatosUsuario = {};
+    meDatosUsuario.fecha_agregado = valor;
+    await fetch(`/mi-dashboard/${userId}/${itemId}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+}
+
+async function meGuardarDlcUsuario(userId, itemId, idx, campo, valor) {
+    if (!meDatosUsuario) meDatosUsuario = {};
+    if (!meDatosUsuario.dlcs_usuario) meDatosUsuario.dlcs_usuario = {};
+    if (!meDatosUsuario.dlcs_usuario[idx]) meDatosUsuario.dlcs_usuario[idx] = {};
+    meDatosUsuario.dlcs_usuario[idx][campo] = valor;
+    await fetch(`/mi-dashboard/${userId}/${itemId}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dlcs_usuario: meDatosUsuario.dlcs_usuario }) });
+}
 }

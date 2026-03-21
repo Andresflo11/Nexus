@@ -124,6 +124,21 @@
   margin-top: 0.3rem;
 }
 
+.card-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.card-bloque-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.42rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
 /* ── Tags de estado, plataforma y logros ────────────────
  * Las etiquetas pequeñas dentro de la card.
  * Puedes cambiar los colores de fondo/borde de cada tipo.
@@ -413,4 +428,5 @@
     gap: 0.65rem;
   }
 }
+
 

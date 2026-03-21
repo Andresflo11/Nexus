@@ -99,14 +99,14 @@ form.setAttribute("autocomplete", "off");
     }
     if (config.usaTomos) {
     add(`<div style="grid-column:1/-1">
-        <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Tomos</label>
+        <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">${config.tomoLabel ? "Volúmenes" : "Tomos"}</label>
         <div id="tomos-container-inline"></div>
         <button type="button" onclick="agregarFilaTomo('inline')"
             style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-            + Añadir tomo
+            + Añadir ${config.tomoLabel ? "volumen" : "tomo"}
         </button>
     </div>`);
-    add(`<div class="number-wrap"><input type="number" name="capituloActualManga" placeholder="Capítulo actual" min="0"></div>`);
+    add(`<div class="number-wrap"><input type="number" name="capituloActualManga" placeholder="${config.capituloLabel ?? "Capítulo"} actual" min="0"></div>`);
 }
     if (config.usaEstadoSerie) {
         const sel = document.createElement("select");
@@ -154,7 +154,7 @@ function agregarItem(e) {
     if (config.usalogros) nuevo.logros = form.logros?.value ?? 'No tiene logros';
 
     if (config.usaEpisodios) {
-    nuevo.temporadas = leerTemporadasDelForm();
+    nuevo.temporadas = leerTemporadasDelForm('inline');
     nuevo.progreso   = {
         temporada: parseInt(form.temporadaActual?.value)  || 1,
         capitulo:  parseInt(form.capituloActualEp?.value) || 0
@@ -257,58 +257,55 @@ function activarEdicionEnModal(id) {
             </button>
         </div>`;
     }
-    if (config.usaEpisodios && item.temporadas) {
+    if (config.usaEpisodios) {
         const temp = Array.isArray(item.temporadas) ? item.temporadas : [];
-    temporadaContador = temp.length;
-    const tempRows = temp.map((t, i) => `
+        temporadaContador = temp.length;
+        const tempRows = temp.map((t, i) => `
         <div id="temporada-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem">
             <select id="temp-tipo-${i}" style="flex-shrink:0;width:120px">
                 <option value="normal"  ${(t.tipo ?? "normal") === "normal"   ? "selected" : ""}>Temporada</option>
                 <option value="ova"     ${t.tipo === "ova"     ? "selected" : ""}>OVA</option>
                 <option value="especial"${t.tipo === "especial"? "selected" : ""}>Especial</option>
-                <option value="pelicula"${t.tipo === "pelicula"? "selected" : ""}>Pelicula</option>
             </select>
             <input type="number" id="temp-caps-${i}" value="${t.capitulos ?? ""}" placeholder="Nº caps" min="1" style="flex:1">
             <button type="button" onclick="eliminarFilaTemporada(${i})"
                 style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>
         </div>`).join("");
 
-    extra += `
+        extra += `
         <div style="grid-column:1/-1;margin-top:0.5rem">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales / pelicula</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales</div>
             <div id="temporadas-container">${tempRows}</div>
             <button type="button" onclick="agregarFilaTemporada('edit')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir temporada / OVA / pelicula
+                + Añadir temporada / OVA
             </button>
-        </div>
-        <input type="number" id="input-temporada-actual-${id}" value="${item.progreso?.temporada ?? 1}" placeholder="Temporada actual (índice)">
-        <input type="number" id="input-capitulo-actual-ep-${id}" value="${item.progreso?.capitulo ?? 0}" placeholder="Capítulo actual">`;
-}
+        </div>`;
+    }
     if (config.usaTomos) {
     const tomos = Array.isArray(item.tomos) ? item.tomos : [];
     tomoContador = tomos.length;
     const tomoRows = tomos.map((t, i) => `
         <div id="tomo-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);white-space:nowrap">Tomo ${t.numero}</span>
-            <input type="number" id="tomo-inicio-${i}" value="${t.capituloInicio ?? ""}" placeholder="Cap. inicio" min="1">
-            <input type="number" id="tomo-fin-${i}"    value="${t.capituloFin ?? ""}"    placeholder="Cap. fin"   min="1">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);white-space:nowrap">${config.tomoLabel ? "Vol." : "Tomo"} ${t.numero}</span>
+            <input type="number" id="tomo-inicio-${i}" value="${t.capituloInicio ?? ""}" placeholder="${config.capituloLabel ?? "Cap."} inicio" min="1">
+            <input type="number" id="tomo-fin-${i}"    value="${t.capituloFin ?? ""}"    placeholder="${config.capituloLabel ?? "Cap."} inicio" min="1">
             <button type="button" onclick="eliminarFilaTomo(${i})" style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>
         </div>`).join("");
 
     extra += `
         <div style="grid-column:1/-1;margin-top:0.5rem">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Tomos</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">${config.tomoLabel ? "Volúmenes" : "Tomos"}</div>
             <div id="tomos-container">${tomoRows}</div>
             <button type="button" onclick="agregarFilaTomo('edit')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir tomo
+                + Añadir ${config.tomoLabel ? "volumen" : "tomo"}
             </button>
         </div>`;
 
     extra += `<input type="number" id="input-cap-manga-${id}" 
     value="${item.progresoManga?.capituloActual ?? 0}" 
-    placeholder="Capítulo actual" min="0" 
+    placeholder="${config.capituloLabel ?? "Capítulo"} actual" min="0"
     style="margin-top:0.5rem">`;
 }
     if (config.usaEstadoSerie) {
@@ -449,13 +446,13 @@ function guardarEdicionCompleta(id) {
     if (config.usalogros)
         actualizado.logros = document.getElementById(`input-logros-${id}`)?.value ?? 'No tiene logros';
     if (config.usaEpisodios) {
-    actualizado.temporadas = leerTemporadasDelForm();
+    actualizado.temporadas = leerTemporadasDelForm('edit');
     actualizado.progreso   = {
         temporada: parseInt(document.getElementById(`input-temporada-actual-${id}`)?.value) || 1,
         capitulo:  parseInt(document.getElementById(`input-capitulo-actual-ep-${id}`)?.value) || 0
     };
 }
-    if (config.usaTomos) actualizado.tomos = leerTomosDeLForm();
+    if (config.usaTomos) actualizado.tomos = leerTomosDeLForm('edit');
     if (config.usaEstadoSerie)
         actualizado.estadoSerie = document.getElementById(`estadoSerie-${id}`)?.value || null;
     if (config.usaCapitulos) {
@@ -544,21 +541,25 @@ function parchearCard(id) {
     const metaEl = card.querySelector(".card-meta");
     const color = config.color ?? "#888";
 if (metaEl) metaEl.innerHTML = `
-    <span class="card-tag tag-estado">${esc(item.estado)}</span>
-    ${normalizarPlataformas(item.plataforma).map(p => `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(p)}</span>`).join("")}
-    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
-
-    if (config.usalogros) {
-        const tieneLogros = item.logros == 1 || item.logros === true;
-        let logrosTag = card.querySelector(".tag-logros-si, .tag-logros-no, .tag-logros-algunos, .tag-logros-proceso, .tag-logros-ninguno");
-        if (!logrosTag) {
-        logrosTag = document.createElement("span");
-        logrosTag.style.marginTop = "0.3rem";
-        card.querySelector(".card-info")?.appendChild(logrosTag);
-        }
-        logrosTag.className   = `card-tag ${claseLogros(item.logros)}`;
-        logrosTag.textContent = (item.logros === "Todos completados" ? "🏆 " : "") + (item.logros ?? "No tiene logros");
-    }
+    <div class="card-bloque">
+        <div class="card-bloque-label">Estado</div>
+        <span class="card-tag tag-estado">${esc(item.estado)}</span>
+    </div>
+    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `
+    <div class="card-bloque">
+        <div class="card-bloque-label">Obra</div>
+        <span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>
+    </div>` : ""}
+    ${config.usalogros ? (() => {
+        const lv = window._dashDatosUsuario?.[item.id]?.logros !== undefined
+            ? window._dashDatosUsuario[item.id].logros
+            : item.logros;
+        return lv ? `
+    <div class="card-bloque">
+        <div class="card-bloque-label">Logros</div>
+        <span class="card-tag ${claseLogros(lv)}">${lv === "Todos completados" ? "" : ""}${lv}</span>
+    </div>` : "";
+    })() : ""}`;
 
     // Badge de valoración
     const badge = card.querySelector(".card-rating-badge");
@@ -619,9 +620,20 @@ function parchearCardEstado(id) {
 
     const metaEl = card.querySelector(".card-meta");
     if (metaEl) metaEl.innerHTML = `
-    <span class="card-tag tag-estado">${esc(item.estado)}</span>
-    ${normalizarPlataformas(item.plataforma).map(p => `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(p)}</span>`).join("")}
-    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
+    <div class="card-bloque">
+        <div class="card-bloque-label">Estado</div>
+        <span class="card-tag tag-estado">${esc(item.estado)}</span>
+    </div>
+    ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `
+    <div class="card-bloque">
+        <div class="card-bloque-label">Obra</div>
+        <span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>
+    </div>` : ""}
+    ${config.usalogros && item.logros ? `
+    <div class="card-bloque">
+        <div class="card-bloque-label">Logros</div>
+        <span class="card-tag ${claseLogros(item.logros)}">${item.logros === "Todos completados" ? "" : ""}${item.logros}</span>
+    </div>` : ""}`;
 }
 
 // ── Abrir modal de confirmación para borrar ───────────────
@@ -732,19 +744,26 @@ let tomoContador = 0;
 
 function agregarFilaTomo(modo) {
     const container = document.getElementById(
-    modo === "edit"   ? "tomos-container" :
-    modo === "inline" ? "tomos-container-inline" :
-                        "tomos-container-new"
-);
-    const i         = tomoContador++;
-    const numero    = i + 1;
-    const div       = document.createElement("div");
+        modo === "edit"   ? "tomos-container" :
+        modo === "inline" ? "tomos-container-inline" :
+                            "tomos-container-new"
+    );
+    // Mismo patrón que agregarFilaDlc: formModalTipoActual en dashboard, config en categoria
+    const _cfg = (typeof formModalTipoActual !== "undefined" && formModalTipoActual)
+        ? CONFIG[formModalTipoActual]
+        : (typeof config !== "undefined" ? config : {});
+    const tomoLabel  = _cfg.tomoLabel     ? "Vol." : "Tomo";
+    const capLabel   = _cfg.capituloLabel ?? "Cap.";
+
+    const i      = tomoContador++;
+    const numero = i + 1;
+    const div    = document.createElement("div");
     div.id          = `tomo-row-${i}`;
     div.style.cssText = "display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem";
     div.innerHTML = `
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);white-space:nowrap">Tomo ${numero}</span>
-        <input type="number" id="tomo-inicio-${i}" placeholder="Cap. inicio" min="1">
-        <input type="number" id="tomo-fin-${i}"    placeholder="Cap. fin"   min="1">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);white-space:nowrap">${tomoLabel} ${numero}</span>
+        <input type="number" id="tomo-inicio-${i}" placeholder="${capLabel} inicio" min="1">
+        <input type="number" id="tomo-fin-${i}"    placeholder="${capLabel} fin"   min="1">
         <button type="button" onclick="eliminarFilaTomo(${i})" style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer">✕</button>`;
     container.appendChild(div);
 }
@@ -753,10 +772,16 @@ function eliminarFilaTomo(i) {
     document.getElementById(`tomo-row-${i}`)?.remove();
 }
 
-function leerTomosDeLForm() {
-    const container = document.getElementById("tomos-container")
-                   ?? document.getElementById("tomos-container-inline")
-                   ?? document.getElementById("tomos-container-new");
+function leerTomosDeLForm(modo) {
+    const containerId = modo === "new"    ? "tomos-container-new"
+                      : modo === "inline" ? "tomos-container-inline"
+                      : modo === "edit"   ? "tomos-container"
+                      : null;
+    const container = containerId
+        ? document.getElementById(containerId)
+        : document.getElementById("tomos-container")
+       ?? document.getElementById("tomos-container-inline")
+       ?? document.getElementById("tomos-container-new");
     if (!container) return [];
     const tomos = [];
     container.querySelectorAll("[id^='tomo-inicio-']").forEach(input => {
@@ -800,10 +825,16 @@ function eliminarFilaTemporada(i) {
     document.getElementById(`temporada-row-${i}`)?.remove();
 }
 
-function leerTemporadasDelForm() {
-    const container = document.getElementById("temporadas-container")      // edición modal
-                   ?? document.getElementById("temporadas-container-inline") // formulario inline
-                   ?? document.getElementById("temporadas-container-new");   // modal universal
+function leerTemporadasDelForm(modo) {
+    const containerId = modo === "new"    ? "temporadas-container-new"
+                      : modo === "inline" ? "temporadas-container-inline"
+                      : modo === "edit"   ? "temporadas-container"
+                      : null;
+    const container = containerId
+        ? document.getElementById(containerId)
+        : document.getElementById("temporadas-container")
+       ?? document.getElementById("temporadas-container-inline")
+       ?? document.getElementById("temporadas-container-new");
     if (!container) return null;
 
     const contadores = { normal: 0, ova: 0, especial: 0 , pelicula: 0};
@@ -1059,4 +1090,149 @@ function leerLinksDelForm(modo) {
         links.push({ plataforma, nombre, url });
     });
     return links.length ? links : null;
+}
+
+function activarEdicionUsuario(itemId, userId) {
+    const item   = dataOriginal.find(i => i.id === itemId);
+    const config = CONFIG[item?.tipo];
+    if (!item || !config) return;
+    const color  = config.color ?? "#888";
+
+    const contenedor = document.getElementById("me-form-contenido");
+    if (!contenedor) return;
+
+    const dlcs       = Array.isArray(item.dlcs) ? item.dlcs : [];
+    const dlcsU      = meDatosUsuario?.dlcs_usuario ?? {};
+    const logrosOpts = ["Sin completar","En proceso","Algunos completados","Todos completados","No tiene logros"];
+    const estadosOpts = config.estados ?? [];
+
+    const labelStyle = `font-family:'JetBrains Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:0.5rem`;
+
+    function chipGroup(opciones, valorActual, inputId, colorActivo) {
+        return `<div style="display:flex;flex-wrap:wrap;gap:0.35rem" id="chips-${inputId}">
+            ${opciones.map(o => `
+                <button type="button"
+                    onclick="ueSeleccionarChip('${inputId}','${o.replace(/'/g,"\\'")}','${(colorActivo||color).replace(/'/g,"\\'")}',this)"
+                    style="padding:0.28rem 0.75rem;border-radius:99px;border:1px solid;font-family:'DM Sans',sans-serif;font-size:0.72rem;cursor:pointer;transition:all 0.15s;
+                        ${valorActual === o
+                            ? `background:${colorActivo||color};border-color:${colorActivo||color};color:#000;font-weight:600`
+                            : `background:transparent;border-color:var(--border2);color:var(--muted)`}">
+                    ${o}
+                </button>`).join("")}
+            <input type="hidden" id="${inputId}" value="${valorActual ?? ""}">
+        </div>`;
+    }
+
+    // Fecha
+    let html = `
+        <div style="grid-column:1/-1">
+            <div style="${labelStyle}">Fecha agregada</div>
+            <input type="date" id="ue-fecha" value="${meDatosUsuario?.fecha_agregado ?? ""}">
+        </div>`;
+
+    // Logros generales (juegos)
+    if (config.usalogros) {
+        const logrosActual = meDatosUsuario !== null
+            ? (meDatosUsuario?.logros || "")
+            : (item.logros || "");
+        html += `
+        <div style="grid-column:1/-1">
+            <div style="${labelStyle}">Logros</div>
+            ${chipGroup(logrosOpts, logrosActual, "ue-logros", "#64dd17")}
+        </div>`;
+    }
+
+    // DLCs
+    if (config.usaDlcs && dlcs.length) {
+        const colStyle = `font-family:'JetBrains Mono',monospace;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)`;
+        const filas = dlcs.map((d, i) => {
+            const du = dlcsU[i] ?? {};
+            return `
+            <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--muted)">${esc(d.tipo??"DLC")}</span>
+                    <span style="font-size:0.85rem;font-weight:500">${esc(d.nombre)}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem">
+                    <div>
+                        <div style="${colStyle};margin-bottom:0.35rem">Estado</div>
+                        ${chipGroup(estadosOpts, du.estado ?? "", `ue-dlc-estado-${i}`, color)}
+                    </div>
+                    <div>
+                        <div style="${colStyle};margin-bottom:0.35rem">Logros</div>
+                        ${chipGroup(logrosOpts, du.logros ?? "", `ue-dlc-logros-${i}`, "#64dd17")}
+                    </div>
+                </div>
+            </div>`;
+        }).join("");
+
+        html += `
+        <div style="grid-column:1/-1;margin-top:0.25rem">
+            <div style="${labelStyle}">DLCs / Ediciones</div>
+            ${filas}
+        </div>`;
+    }
+
+    // Botón guardar
+    html += `
+        <div style="grid-column:1/-1;margin-top:1.25rem">
+            <button onclick="guardarEdicionUsuario(${itemId},${userId})"
+                style="width:100%;padding:0.65rem;background:${color};color:#000;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer">
+                Guardar
+            </button>
+        </div>`;
+
+    contenedor.innerHTML = html;
+    setTimeout(() => initDatePickers(), 0);
+}
+
+function ueSeleccionarChip(inputId, valor, colorActivo, btnPulsado) {
+    const input = document.getElementById(inputId);
+    const grupo = document.getElementById(`chips-${inputId}`);
+    if (!input || !grupo) return;
+
+    const yaActivo = input.value === valor;
+
+    grupo.querySelectorAll("button").forEach(b => {
+        b.style.background  = "transparent";
+        b.style.borderColor = "var(--border2)";
+        b.style.color       = "var(--muted)";
+        b.style.fontWeight  = "";
+    });
+
+    if (yaActivo) {
+        input.value = ""; // desmarcar
+    } else {
+        input.value = valor;
+        btnPulsado.style.background  = colorActivo;
+        btnPulsado.style.borderColor = colorActivo;
+        btnPulsado.style.color       = "#000";
+        btnPulsado.style.fontWeight  = "600";
+    }
+}
+
+async function guardarEdicionUsuario(itemId, userId) {
+    const fecha = document.getElementById("ue-fecha")?.value ?? null;
+    const item  = dataOriginal.find(i => i.id === itemId);
+    const dlcs  = Array.isArray(item?.dlcs) ? item.dlcs : [];
+    const dlcsU = {};
+    dlcs.forEach((_, i) => {
+        dlcsU[i] = {
+            logros: document.getElementById(`ue-dlc-logros-${i}`)?.value ?? "",
+            estado: document.getElementById(`ue-dlc-estado-${i}`)?.value ?? ""
+        };
+    });
+    const logros = document.getElementById("ue-logros")?.value || null;
+    await fetch(`/mi-dashboard/${userId}/${itemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fecha_agregado: fecha, dlcs_usuario: dlcsU, logros_usuario: logros || null })
+    });
+    if (!window._dashDatosUsuario) window._dashDatosUsuario = {};
+    if (!window._dashDatosUsuario[itemId]) window._dashDatosUsuario[itemId] = {};
+    window._dashDatosUsuario[itemId].logros = logros || null;
+
+    parchearCard(itemId); // ← actualizar la card con el nuevo valor antes de volver
+    meDatosUsuario = null;
+    meVolverDesdeEdicion(itemId);
 }

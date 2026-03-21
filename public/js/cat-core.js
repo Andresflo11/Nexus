@@ -32,7 +32,7 @@ document.querySelectorAll(".platform-btn").forEach(btn => {
 
 async function cargarItems() {
     try {
-        const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+        const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
         const esAdmin = !_u || _u.rol === "admin";
 
         // Cargar todos los items de esta categoría + globales para relacionados
@@ -43,21 +43,37 @@ async function cargarItems() {
         let data   = await res.json();
         todosLosItemsGlobal = await resGlobal.json();
 
-        if (!esAdmin) {
+        if (esAdmin) {
+            window._dashDatosUsuario = null; // Admin no usa datos de usuario
+        } else {
             // Obtener solo los ids del dashboard del usuario
             const dashRes  = await fetch(`/mi-dashboard/${_u.id}`);
             const dashItems = await dashRes.json();
             const dashIds  = new Set(dashItems.map(i => i.id));
 
             // Filtrar solo los items que el usuario tiene en su dashboard
-            data = data.filter(i => dashIds.has(i.id));
+            const dataMap = {};
+            data.forEach(i => dataMap[i.id] = i);
+            data = dashItems.map(d => dataMap[d.id]).filter(Boolean);
 
             // Mezclar progreso personal
             const progRes  = await fetch(`/progreso/${_u.id}`);
             const progrMap = await progRes.json();
 
+            window._dashDatosUsuario = {};
+            const dashMap = {};
+            dashItems.forEach((i, idx) => {
+                window._dashDatosUsuario[i.id] = {
+                    logros:         i.logros_usuario  ?? null,
+                    fecha_agregado: i.fecha_agregado  ?? null,
+                    orden:          idx
+                };
+                dashMap[i.id] = i;
+            });
+
             data = data.map(item => {
-                const p = progrMap[item.id];
+                const p  = progrMap[item.id];
+                const du = dashMap[item.id];
                 return {
                     ...item,
                     estado:         p?.estado          ?? config.estados[0],
@@ -66,6 +82,9 @@ async function cargarItems() {
                     paginaActual:   p?.paginaActual     ?? 0,
                     progresoManga:  p?.progresoManga ? (typeof p.progresoManga === "string" ? JSON.parse(p.progresoManga) : p.progresoManga) : { capituloActual: 0 },
                     progreso:       p?.progreso       ? (typeof p.progreso === "string" ? JSON.parse(p.progreso) : p.progreso) : { temporada: 1, capitulo: 0 },
+                    // Reemplazar datos del admin con los del usuario (null si no tiene)
+                    logros:         du?.logros_usuario  ?? null,
+                    dlcs:           item.dlcs,          // DLCs de estructura los mantiene el admin
                 };
             });
         }
@@ -107,12 +126,21 @@ function actualizarItem(item) {
 }
 
 async function quitarDeDashboard(itemId, btn) {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     if (!_u) return;
+
+    const confirmar = await mostrarConfirmacionQuitar();
+    if (!confirmar) return;
+
     if (btn) { btn.disabled = true; btn.textContent = "..."; }
     try {
+        // Borrar del dashboard (cascade borra fecha, dlcs_usuario, logros_usuario)
         const res = await fetch(`/mi-dashboard/${_u.id}/${itemId}`, { method: "DELETE" });
         if (res.ok) {
+            // Borrar progreso personal también
+            await fetch(`/progreso/${_u.id}/${itemId}`, { method: "DELETE" }).catch(() => {});
+            // Limpiar _dashDatosUsuario
+            if (window._dashDatosUsuario) delete window._dashDatosUsuario[itemId];
             const card = document.getElementById(`card-${itemId}`);
             if (card) card.remove();
             dataOriginal = dataOriginal.filter(i => i.id !== itemId);
@@ -126,8 +154,28 @@ async function quitarDeDashboard(itemId, btn) {
     }
 }
 
+function mostrarConfirmacionQuitar() {
+    return new Promise(resolve => {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center`;
+        overlay.innerHTML = `
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;max-width:360px;width:90%;text-align:center">
+                <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;margin-bottom:0.5rem">¿Quitar del dashboard?</div>
+                <div style="font-family:'DM Sans',sans-serif;font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem">Se borrará todo tu progreso y datos guardados para este item.</div>
+                <div style="display:flex;gap:0.75rem;justify-content:center">
+                    <button id="qd-cancelar" style="padding:0.55rem 1.25rem;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer">Cancelar</button>
+                    <button id="qd-confirmar" style="padding:0.55rem 1.25rem;border-radius:8px;border:none;background:#ef4444;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer">Sí, quitar</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector("#qd-confirmar").onclick = () => { overlay.remove(); resolve(true); };
+        overlay.querySelector("#qd-cancelar").onclick  = () => { overlay.remove(); resolve(false); };
+        overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+    });
+}
+
 function actualizarItemSilencioso(item) {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     if (_u && _u.rol !== "admin") {
         fetch(`/progreso/${_u.id}/${item.id}`, {
             method: "PUT",
@@ -164,7 +212,7 @@ function actualizarHeader() {
 }
 
 function aplicarPermisos() {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     window._esAdmin = _u && _u.rol === "admin";
     const btnAnadir = document.getElementById("btn-anadir-categoria");
     if (btnAnadir) btnAnadir.style.display = window._esAdmin ? "" : "none";
@@ -244,4 +292,11 @@ window.addEventListener("hashchange", () => {
             }, 2000);
         }
     }
+});
+
+window.addEventListener("pageshow", () => {
+    aplicarPermisos();
+    const lista = document.getElementById("lista");
+    if (lista) lista.innerHTML = "";
+    cargarItems();
 });

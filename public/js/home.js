@@ -7,7 +7,7 @@ const HOME_TIPOS = ["juegos","peliculas","series","animes","mangas","comics","li
 
 async function cargarHome() {
   try {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     const mostrarBtn = _u && _u.rol !== "admin";
 
     const res   = await fetch("/items");
@@ -74,7 +74,7 @@ function renderHomeCategories(items, homeDashIds = new Set(), _u = null, mostrar
       track.className = "home-carrusel-track";
       trackWrap.appendChild(track);
 
-      const _sesionHome = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+      const _sesionHome = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
       const _mostrarBtnHome = _sesionHome && _sesionHome.rol !== "admin";
 
       lista.forEach(it => {
@@ -237,4 +237,5 @@ function renderFondoBlur(imagenes) {
 
   requestAnimationFrame(animar);
 }
+
 document.addEventListener("DOMContentLoaded", cargarHome);

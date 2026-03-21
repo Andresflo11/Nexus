@@ -43,6 +43,7 @@ function cambiarTipoFormModal(nuevoTipo) {
     }
 
     formModalTipoActual = nuevoTipo;
+    window._tipoFormActual = nuevoTipo;
     const cfg   = CONFIG[nuevoTipo];
     const color = cfg.color ?? "#888";
 
@@ -65,6 +66,7 @@ function cambiarTipoFormModal(nuevoTipo) {
 
 function buildFormModalCampos(t) {
     temporadaContador = 0;
+    tomoContador      = 0;
     linkContador      = 0;
     const cfg      = CONFIG[t];
     const color    = cfg.color ?? "#888";
@@ -165,7 +167,7 @@ function buildFormModalCampos(t) {
         add(`<div style="grid-column:1/-1">
             <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / pelicula</label>
             <div id="temporadas-container-new"></div>
-            <button type="button" data-action="add-temporada"
+            <button type="button" onclick="agregarFilaTemporada('new')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
                 + Añadir temporada / OVA / pelicula
             </button>
@@ -176,13 +178,13 @@ function buildFormModalCampos(t) {
 
     if (cfg.usaTomos) {
         add(`<div style="grid-column:1/-1">
-            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Tomos</label>
+            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">${cfg.tomoLabel ? "Volúmenes" : "Tomos"}</label>
             <div id="tomos-container-new"></div>
             <button type="button" onclick="agregarFilaTomo('new')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir tomo
+                + Añadir ${cfg.tomoLabel ? "volumen" : "tomo"}
             </button>
-            <div class="number-wrap" style="margin-top:0.5rem"><input type="number" name="capituloActualManga" placeholder="Capítulo actual" min="0"></div>
+            <div class="number-wrap" style="margin-top:0.5rem"><input type="number" name="capituloActualManga" placeholder="${cfg.capituloLabel ?? "Capítulo"} actual" min="0"></div>
         </div>`);
     }
 
@@ -227,10 +229,6 @@ function buildFormModalCampos(t) {
 
     form.onsubmit = (e) => guardarFormModal(e, t);
 
-    setTimeout(() => {
-        const btnTemp = document.querySelector("#form-modal-campos button[data-action='add-temporada']");
-        if (btnTemp) btnTemp.addEventListener("click", () => agregarFilaTemporada('new'));
-    }, 0);
 }
 
 // ── Plataforma múltiple en form-modal ────────────────────
@@ -362,7 +360,7 @@ async function guardarFormModal(e, t) {
     if (cfg.usaEstadoSerie)  nuevo.estadoSerie = form.estadoSerie?.value || null;
 
     if (cfg.usaEpisodios) {
-        nuevo.temporadas = leerTemporadasDelForm();
+        nuevo.temporadas = leerTemporadasDelForm('new');
         nuevo.progreso   = {
             temporada: parseInt(form.querySelector('[name="temporadaActual"]')?.value)  || 1,
             capitulo:  parseInt(form.querySelector('[name="capituloActualEp"]')?.value) || 0
@@ -370,7 +368,7 @@ async function guardarFormModal(e, t) {
     }
 
     if (cfg.usaTomos) {
-        nuevo.tomos         = leerTomosDeLForm();
+        nuevo.tomos         = leerTomosDeLForm('new');
         nuevo.progresoManga = { capituloActual: parseInt(form.capituloActualManga?.value) || 0 };
     }
 

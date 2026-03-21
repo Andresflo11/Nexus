@@ -73,8 +73,24 @@ function renderItem() {
   if (item.imagen) { bg.style.backgroundImage = `url('${esc(item.imagen)}')`; bg.style.opacity = "1"; }
 
   // Link de volver
-  if (document.referrer.includes("categoria.html"))
-    document.getElementById("back-btn").href = document.referrer;
+  const itemParams = new URLSearchParams(window.location.search);
+  const origenParam = itemParams.get("origen");
+  if (origenParam) {
+      // Origen explícito en la URL — siempre prioritario
+      sessionStorage.setItem("nexus_item_origen", decodeURIComponent(origenParam));
+  } else {
+      // Fallback: usar referrer
+      const referrer = document.referrer;
+      if (referrer.includes("categoria.html") || referrer.includes("categoria-index.html") || referrer.includes("dashboard.html")) {
+          sessionStorage.setItem("nexus_item_origen", referrer);
+      } else if (!referrer.includes("item.html")) {
+          sessionStorage.removeItem("nexus_item_origen");
+      }
+  }
+  const origen = sessionStorage.getItem("nexus_item_origen");
+  if (origen) {
+      document.getElementById("back-btn").href = origen;
+  }
 
   // Póster
   const poster = document.getElementById("item-poster");
@@ -96,6 +112,18 @@ function renderItem() {
 
 function renderColumnaIzquierda(color) {
   const col = document.getElementById("item-left-col");
+
+  // Páginas debajo del póster (solo libros)
+  if (cfg.usaPaginas && item.paginasTotales) {
+    const paginasEl = document.createElement("div");
+    paginasEl.className = "item-left-card";
+    paginasEl.innerHTML = `
+      <div class="item-left-card-row" style="text-align:center">
+        <div class="item-left-card-label">Páginas</div>
+        <span style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:1px;color:${color};line-height:1">${item.paginasTotales}</span>
+      </div>`;
+    document.getElementById("item-poster").insertAdjacentElement("afterend", paginasEl);
+  }
 
   const generos = Array.isArray(item.generos) ? item.generos : [];
   const plats   = normalizarPlataformas(item.plataforma);
@@ -152,7 +180,7 @@ function renderColumnaIzquierda(color) {
   }
 
   // Dashboard btn — se inserta ANTES de la tarjeta de info
-  const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
   if (_u && _u.rol !== "admin") {
     const wrap = document.createElement("div");
     wrap.id = "item-btn-dashboard-wrap";
@@ -177,7 +205,7 @@ function renderColumnaIzquierda(color) {
 }
 
 function needsDashboard() {
-  try { const u = JSON.parse(sessionStorage.getItem("nexus_user")); return u && u.rol !== "admin"; } catch { return false; }
+  try { const u = JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); return u && u.rol !== "admin"; } catch { return false; }
 }
 
 // ════════════════════════════════════════════════════════
@@ -235,7 +263,6 @@ function renderColumnaDerecha(color) {
   if (cfg.usaEpisodios && item.temporadas?.length)  col.appendChild(buildSeccionEpisodios(color));
   if (cfg.usaTomos && item.tomos?.length)            col.appendChild(buildSeccionManga(color, undefined));
   if (cfg.usaCapitulos && item.capitulosTotales)     col.appendChild(buildSeccionCapitulos(color));
-  if (cfg.usaPaginas && item.paginasTotales)         col.appendChild(buildSeccionPaginas(color));
 
   // ── Saga ──────────────────────────────────────────────
   if (item.saga) renderSeccionSaga(col, color);
@@ -358,7 +385,7 @@ function buildEpisodiosInner(color, idx) {
   const tabsHTML = temps.map((t, i) => {
     const label = t.tipo==="ova"?`OVA ${t.numero}`:t.tipo==="especial"?`ESP ${t.numero}`:`T${t.numero}`;
     const a = i===idx;
-    return `<button class="item-tab ${a?"activo":""}" style="${a?`background:${color};border-color:${color};color:#000`:""}" onclick="cambiarTabTemp(${i})">${label} <span style="font-size:0.54rem;opacity:0.7">${t.capitulos}</span></button>`;
+    return `<button class="item-tab ${a?"activo":""}" style="${a?`background:${color};border-color:${color};color:#000`:""}" onclick="cambiarTabTemp(${i})">${label} <span style="font-size:0.54rem;opacity:0.7"></span></button>`;
   }).join("");
   const temp = temps[idx] ?? temps[0];
   const dotsHTML = temp ? Array.from({length:temp.capitulos},(_,j)=>{
@@ -369,14 +396,16 @@ function buildEpisodiosInner(color, idx) {
     <div class="item-tabs">${tabsHTML}</div>
     ${temp?`<div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">
       ${temp.tipo==="ova"?`OVA ${temp.numero}`:temp.tipo==="especial"?`Especial ${temp.numero}`:`Temporada ${temp.numero}`}
-      <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.4rem">${temp.capitulos} eps</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.4rem"></span>
     </div><div class="item-eps-grid">${dotsHTML}</div>`:""}`;
 }
 
 function cambiarTabTemp(idx) {
   tabActual = idx;
   const sec = document.getElementById("sec-episodios");
-  if (sec) sec.innerHTML = buildEpisodiosInner(cfg.color??"#888", idx);
+  if (!sec) return;
+  sec.innerHTML = buildEpisodiosInner(cfg.color??"#888", idx);
+  sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
 }
 
 // ── Manga / Tomos ─────────────────────────────────────────
@@ -395,19 +424,25 @@ function buildSeccionManga(color, tomoTabActual) {
 }
 
 function buildMangaInner(color, idx) {
-  const tomos = item.tomos ?? [];
+  const tomos      = item.tomos ?? [];
+  const tomoLabel  = cfg.tomoLabel     ?? "T";
+  const tomoNombre = cfg.tomoLabel     ? "Volumen" : "Tomo";
+  const capLabel   = cfg.capituloLabel ?? "Capitulos";
+  const secLabel   = cfg.tomoLabel     ? "Volúmenes" : "Tomos";
   const ta = tomos[idx];
-  const tabsHTML = tomos.map((t,i)=>{const a=i===idx;return `<button class="item-tab ${a?"activo":""}" style="${a?`background:${color};border-color:${color};color:#000`:""}" onclick="cambiarTabTomo(${i})">T${t.numero} <span style="font-size:0.54rem;opacity:0.7">${t.capituloFin-t.capituloInicio+1}</span></button>`;}).join("");
+  const tabsHTML = tomos.map((t,i)=>{const a=i===idx;return `<button class="item-tab ${a?"activo":""}" style="${a?`background:${color};border-color:${color};color:#000`:""}" onclick="cambiarTabTomo(${i})">${tomoLabel}${t.numero} <span style="font-size:0.54rem;opacity:0.7"></span></button>`;}).join("");
   const dotsHTML = ta ? Array.from({length: ta.capituloFin-ta.capituloInicio+1},(_,i)=>{
     const n=ta.capituloInicio+i;
-    return `<div class="item-ep-dot" title="Cap. ${n}">${n}</div>`;
+    return `<div class="item-ep-dot" title="${capLabel} ${n}">${n}</div>`;
   }).join("") : "";
-  return `<div class="item-section-label">Tomos</div><div class="item-tabs">${tabsHTML}</div>${ta?`<div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">Tomo ${ta.numero}<span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.4rem">caps ${ta.capituloInicio}–${ta.capituloFin}</span></div><div class="item-eps-grid">${dotsHTML}</div>`:""}`;
+  return `<div class="item-section-label">${secLabel}</div><div class="item-tabs">${tabsHTML}</div>${ta?`<div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">${tomoNombre} ${ta.numero}<span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.4rem"><div>${capLabel}</div></span></div><div class="item-eps-grid">${dotsHTML}</div>`:""}`;
 }
 
 function cambiarTabTomo(idx) {
   const sec = document.getElementById("sec-manga");
-  if (sec) sec.innerHTML = buildMangaInner(cfg.color??"#888", idx);
+  if (!sec) return;
+  sec.innerHTML = buildMangaInner(cfg.color??"#888", idx);
+  sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
 }
 
 // ── Capítulos ─────────────────────────────────────────────
@@ -510,7 +545,7 @@ function buildSeccionRelacionados(color) {
 // ── Dashboard ─────────────────────────────────────────────
 
 async function agregarAlDashboard() {
-  const _u = (()=>{ try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
   if (!_u) return;
   const btn = document.getElementById("item-btn-dashboard"); if (btn) btn.disabled = true;
   try {

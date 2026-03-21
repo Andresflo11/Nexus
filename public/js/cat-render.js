@@ -65,7 +65,7 @@ function renderCard(item, idx) {
          : t?.tipo === "especial" ? `ESP ${t.numero}`
          : t?.tipo === "pelicula" ? `PEL ${t.numero}`
          : `T${item.progreso.temporada}`;
-})()} · Ep ${item.progreso.capitulo}</div>
+})()} (${pct}%)</div>
             <div class="progress-wrap" style="--pct:${pct}%"><div class="progress-fill" style="background:${color}"></div></div>
             <div class="progress-btns">
                 <button class="prog-btn" onclick="cambiarEpisodio(${item.id}, -1)"style="color:#6b7280"onmouseenter="this.style.background='${color}30';this.style.borderColor='${color}';this.style.color='#fff'"onmouseleave="this.style.background='';this.style.borderColor='';this.style.color='#6b7280'">−</button>
@@ -77,16 +77,21 @@ function renderCard(item, idx) {
     if (config.usaTomos && item.tomos?.length) {
     const capActual  = item.progresoManga?.capituloActual ?? 0;
     const capMax     = item.tomos[item.tomos.length - 1].capituloFin;
-    const tomoActual = item.tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
-                    ?? item.tomos[item.tomos.length - 1];
+    const tomoActual = capActual === 0
+        ? item.tomos[0]
+        : (item.tomos.find(t => capActual >= t.capituloInicio && capActual <= t.capituloFin)
+                    ?? item.tomos[item.tomos.length - 1]);
+    const tomoLabel  = config.tomoLabel     ?? "Tomo";
+    const tomoNombre = config.tomoLabel     ? "Volumen" : "Tomo";
+    const capLabel   = config.capituloLabel ?? "Cap";
     const pct = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 100)) : 0;
 
     progreso = `
-        <div class="progress-info">Tomo ${tomoActual?.numero ?? "?"} · Cap ${capActual} (${pct}%)</div>
+         <div class="progress-info">${tomoNombre} ${tomoActual?.numero ?? "?"} (${pct}%)</div>
         <div class="progress-wrap" style="--pct:${pct}%"><div class="progress-fill" style="background:${color}"></div></div>
         <div class="progress-btns">
             <button class="prog-btn" onclick="mecambiarCapituloManga(-1, ${item.id})"style="color:#6b7280"onmouseenter="this.style.background='${color}30';this.style.borderColor='${color}';this.style.color='#fff'"onmouseleave="this.style.background='';this.style.borderColor='';this.style.color='#6b7280'">−</button>
-           <span class="prog-num" style="color:${color}">Cap ${capActual}</span>
+           <span class="prog-num" style="color:${color}">${capLabel} ${capActual}</span>
           <button class="prog-btn" onclick="mecambiarCapituloManga(1, ${item.id})"style="color:#6b7280"onmouseenter="this.style.background='${color}30';this.style.borderColor='${color}';this.style.color='#fff'"onmouseleave="this.style.background='';this.style.borderColor='';this.style.color='#6b7280'">+</button>
         </div>`;
     }
@@ -102,11 +107,26 @@ function renderCard(item, idx) {
       <div class="card-info">
         <div class="card-title">${esc(item.titulo)}</div>
         <div class="card-meta">
-          <span class="card-tag tag-estado">${esc(item.estado)}</span>
-          ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
-          ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}
+          <div class="card-bloque">
+            <div class="card-bloque-label">Estado</div>
+            <span class="card-tag tag-estado">${esc(item.estado)}</span>
+          </div>
+          ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `
+          <div class="card-bloque">
+            <div class="card-bloque-label">Estado de la serie</div>
+            <span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>
+          </div>` : ""}
+          ${config.usalogros ? (() => {
+            const lv = window._dashDatosUsuario?.[item.id]?.logros !== undefined
+                ? window._dashDatosUsuario[item.id].logros
+                : item.logros;
+            return lv ? `
+          <div class="card-bloque">
+            <div class="card-bloque-label">Logros</div>
+            <span class="card-tag ${claseLogros(lv)}">${lv === "Todos completados" ? "" : ""}${lv}</span>
+          </div>` : "";
+          })() : ""}
         </div>
-        ${config.usalogros ? `<span class="card-tag ${claseLogros(item.logros)}" style="margin-top:0.3rem">${item.logros === "Todos completados" ? "🏆 " : ""}${item.logros ?? "No tiene logros"}</span>` : ""}
         <div class="card-bottom">
           ${progreso}
           <div class="card-actions">
@@ -132,22 +152,24 @@ function renderListItem(item, idx) {
     const delay    = `d${Math.min(idx + 1, 6)}`;
 
     let extra = "";
-    if (config.usaEpisodios && item.progreso)
-        extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${(() => {
-    const t = item.temporadas[item.progreso.temporada - 1];
-    const label = t?.tipo === "ova"      ? `OVA ${t.numero}`
-                : t?.tipo === "especial" ? `ESP ${t.numero}`
-                : t?.tipo === "pelicula" ? `PEL ${t.numero}`
-                : `T${item.progreso.temporada}`;
-    return ` · ${label}E${item.progreso.capitulo}`;
-})()}</span>`;
+    if (config.usaEpisodios && item.progreso && item.temporadas?.length) {
+        const totalCaps = item.temporadas.reduce((s, t) => s + t.capitulos, 0);
+        const capActual = item.temporadas.slice(0, item.progreso.temporada - 1).reduce((s, t) => s + t.capitulos, 0) + (item.progreso.capitulo ?? 0);
+        const pct = totalCaps ? Math.min(100, Math.round((capActual / totalCaps) * 100)) : 0;
+        const t = item.temporadas[item.progreso.temporada - 1];
+        const label = t?.tipo === "ova"      ? `OVA ${t.numero}`
+                    : t?.tipo === "especial" ? `ESP ${t.numero}`
+                    : t?.tipo === "pelicula" ? `PEL ${t.numero}`
+                    : `T${item.progreso.temporada}`;
+        extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · ${label} Ep ${item.progreso.capitulo} (${pct}%)</span>`;
+    }
     if (config.usaCapitulos && item.capitulosTotales)
         extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · Cap ${item.capituloActual}/${item.capitulosTotales}</span>`;
     if (config.usaPaginas && item.paginasTotales)
         extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · Pág ${item.paginaActual}/${item.paginasTotales}</span>`;
 
-    return `
-    <div class="list-item ${delay}" id="card-${item.id}">
+     return `
+    <div class="list-item ${delay}" id="card-${item.id}" onclick="abrirModalExpandido(${item.id})" style="cursor:pointer">
       <span class="platform-dot" style="background:${color}"></span>
       <div class="list-thumb">${poster}</div>
       <div style="flex:1;min-width:0">
@@ -212,7 +234,7 @@ function mostrarPorAño(lista) {
     // Agrupar items por año
     const grupos = {};
     lista.forEach(item => {
-        const año = extraerAño(item.fecha) || "Sin fecha";
+        const año = extraerAñoItem(item) || "Sin fecha";
         if (!grupos[año]) grupos[año] = [];
         grupos[año].push(item);
     });
@@ -246,12 +268,19 @@ function aplicarOrden() {
         : [...dataOriginal];
 
     const sort = document.getElementById("sort-select")?.value ?? "reciente";
-    if      (sort === "reciente")    lista.sort((a, b) => b.id - a.id);
+    if (sort === "reciente") {
+        if (window._dashDatosUsuario) {
+            // Usuario normal: respetar orden de agregado al dashboard
+            lista.sort((a, b) => (window._dashDatosUsuario[a.id]?.orden ?? 999) - (window._dashDatosUsuario[b.id]?.orden ?? 999));
+        } else {
+            lista.sort((a, b) => b.id - a.id);
+        }
+    }
     else if (sort === "rating-desc") lista.sort((a, b) => (b.valoracion ?? 0) - (a.valoracion ?? 0));
     else if (sort === "rating-asc")  lista.sort((a, b) => (a.valoracion ?? 0) - (b.valoracion ?? 0));
     else if (sort === "titulo")      lista.sort((a, b) => a.titulo.localeCompare(b.titulo));
-    else if (sort === "año-desc")    lista.sort((a, b) => extraerAño(b.fecha) - extraerAño(a.fecha));
-    else if (sort === "año-asc")     lista.sort((a, b) => extraerAño(a.fecha) - extraerAño(b.fecha));
+     else if (sort === "año-desc")    lista.sort((a, b) => extraerAñoItem(b) - extraerAñoItem(a));
+    else if (sort === "año-asc")     lista.sort((a, b) => extraerAñoItem(a) - extraerAñoItem(b));
 
     if (sort === "año-desc" || sort === "año-asc") {
         mostrarPorAño(lista);
@@ -301,4 +330,12 @@ function extraerAño(fecha) {
     if (!fecha) return 0;
     const año = parseInt(fecha.split("-")[0]);
     return isNaN(año) ? 0 : año;
+}
+
+function extraerAñoItem(item) {
+    // Para usuarios normales usar fecha_agregado al dashboard, para admin la fecha del item
+    const fecha = window._dashDatosUsuario
+        ? (window._dashDatosUsuario[item.id]?.fecha_agregado ?? item.fecha)
+        : item.fecha;
+    return extraerAño(fecha);
 }

@@ -16,7 +16,7 @@ function abrirModalDesdeIndex(id) {
 }
 
 function actualizarItemSilenciosoIndex(item) {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     const esAdmin = !_u || _u.rol === "admin";
     const url  = esAdmin ? `/items/${item.id}` : `/progreso/${_u.id}/${item.id}`;
     const body = esAdmin ? item : {

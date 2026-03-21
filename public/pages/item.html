@@ -280,6 +280,18 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .item-spinner { animation: spin 1.2s linear infinite; }
 
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.item-eps-grid, .item-ep-dot {
+  animation: fadeSlideIn 0.22s ease both;
+}
+.item-eps-grid .item-ep-dot {
+  animation: fadeSlideIn 0.18s ease both;
+  animation-delay: calc(var(--i, 0) * 12ms);
+}
+
 </style>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23080a0f'/><text x='50' y='72' font-family='Arial Black,sans-serif' font-size='62' font-weight='900' text-anchor='middle' fill='%23e8ff47'>N</text></svg>">
 </head>

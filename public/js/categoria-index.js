@@ -16,7 +16,7 @@ let dashIds     = new Set(); // ids ya agregados al dashboard del usuario
 
 async function cargar() {
   try {
-    const _u = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
     const mostrarBtn = _u && _u.rol !== "admin";
 
     const res  = await fetch("/items");
@@ -37,7 +37,7 @@ async function cargar() {
 }
 
 function renderizar() {
-  const _u         = (() => { try { return JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
+  const _u         = (() => { try { return JSON.parse(localStorage.getItem("nexus_user")) || JSON.parse(sessionStorage.getItem("nexus_user")); } catch { return null; } })();
   const mostrarBtn = _u && _u.rol !== "admin";
 
   const q      = document.getElementById("catidx-buscar").value.toLowerCase();

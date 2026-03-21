@@ -634,10 +634,7 @@
 }
 
 .home-search-wrap #filtroBusqueda-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: auto;
+  position: fixed;
   width: 180px;
   z-index: 9999;
 }
