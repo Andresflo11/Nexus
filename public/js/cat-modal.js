@@ -63,44 +63,53 @@ function abrirModalExpandido(id) {
     document.getElementById("me-titulo").textContent = item.titulo;
 
     // Tags de metadata (fecha, plataforma, estadoSerie, estado, logros)
+    function meBloque(label, valor, valorColor) {
+        return `<div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:0.15rem">${label}</div>
+            <span style="font-family:'Bebas Neue',cursive;font-size:1.6rem;color:${valorColor ?? "var(--text)"};letter-spacing:1.5px;line-height:1">${valor}</span>
+        </div>`;
+    }
     const metaHTML = [];
     if (item.fecha) {
         const [y, m, d] = item.fecha.split("-");
         const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        const fechaFormato = `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
-        metaHTML.push(`<span class="me-tag me-tag-fecha">${fechaFormato}</span>`);
+        metaHTML.push(meBloque("Fecha", `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`));
     }
-    if (item.plataforma && item.plataforma !== "null") metaHTML.push(`<span class="me-tag" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>`);
-    if (item.estadoSerie && item.estadoSerie !== "null") metaHTML.push(`<span class="me-tag me-tag-serie">${esc(item.estadoSerie)}</span>`);
-    if (item.estado)      metaHTML.push(`<span class="me-tag me-tag-estado">${esc(item.estado)}</span>`);
+    const plats = (()=>{ if(!item.plataforma||item.plataforma==="null") return []; if(Array.isArray(item.plataforma)) return item.plataforma.filter(Boolean); return [item.plataforma]; })();
+    if (item.tipo !== "juegos") plats.forEach(p => metaHTML.push(meBloque("Plataforma", esc(p), color)));
+    if (item.estadoSerie && item.estadoSerie !== "null") metaHTML.push(meBloque("Estado de la obra", esc(item.estadoSerie), "#4ade80"));
+    if (item.estado) metaHTML.push(meBloque("Tu estado", esc(item.estado), color));
     if (config.usalogros) {
-    const claseModal = {
-        "Todos completados":   "me-tag-logros-todos",
-        "Algunos completados": "me-tag-logros-algunos",
-        "En proceso":          "me-tag-logros-proceso",
-        "Sin completar":       "me-tag-logros-sin",
-        "No tiene logros":     "me-tag-logros-ninguno"
-    }[item.logros] ?? "me-tag-logros-ninguno";
-    const emoji = item.logros === "Todos completados" ? "🏆 " : "";
-    metaHTML.push(`<span class="me-tag ${claseModal}">${emoji}${item.logros ?? "No tiene logros"}</span>`);
+        const logrosColor = { "Todos completados":"#64dd17","Algunos completados":"var(--accent)","En proceso":"#ff6b35","Sin completar":"#9ca3af","No tiene logros":"#6b7280" }[item.logros] ?? "#6b7280";
+        const emoji = item.logros === "Todos completados" ? "🏆 " : "";
+        metaHTML.push(meBloque("Logros", `${emoji}${item.logros ?? "No tiene logros"}`, logrosColor));
     }
     if (config.usaDlcs && item.dlcs?.length) {
+    const logrosColor = (l) => ({"Todos completados":"#64dd17","Algunos completados":"var(--accent)","En proceso":"#ff6b35","Sin completar":"#9ca3af","No tiene logros":"#6b7280"})[l] ?? "#6b7280";
+    const hayLogros = item.dlcs.some(d => d.logros);
+    const hayEstado = item.dlcs.some(d => d.estado);
     const dlcHTML = item.dlcs.map(d => `
-        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted)">${esc(d.tipo ?? "DLC")}</span>
+        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border)">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);min-width:36px">${esc(d.tipo ?? "DLC")}</span>
             <span style="font-size:0.82rem;flex:1">${esc(d.nombre)}</span>
-            <span class="card-tag ${claseLogros(d.logros)}" style="font-size:0.58rem">${d.logros === "Todos completados" ? "🏆 " : ""}${d.logros ?? ""}</span>
-            <span class="card-tag tag-estado" style="font-size:0.58rem">${esc(d.estado ?? "")}</span>
+            ${hayLogros ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${logrosColor(d.logros)};letter-spacing:1px;line-height:1;min-width:80px;text-align:right">${d.logros === "Todos completados" ? "🏆 " : ""}${d.logros ?? ""}</span>` : ""}
+            ${hayEstado ? `<span style="font-family:'Bebas Neue',cursive;font-size:0.88rem;color:${color};letter-spacing:1px;line-height:1;min-width:70px;text-align:right">${esc(d.estado ?? "")}</span>` : ""}
         </div>`).join("");
 
+    const labelStyle = "font-family:'JetBrains Mono',monospace;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)";
     document.getElementById("me-dlcs").innerHTML = `
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">DLCs / Ediciones</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;padding-bottom:0.35rem;border-bottom:1px solid var(--border2);margin-bottom:0.1rem">
+            <span style="${labelStyle};min-width:36px">Tipo</span>
+            <span style="${labelStyle};flex:1">Nombre</span>
+            ${hayLogros ? `<span style="${labelStyle};min-width:80px;text-align:right">Logros</span>` : ""}
+            ${hayEstado ? `<span style="${labelStyle};min-width:70px;text-align:right">Estado</span>` : ""}
+        </div>
         ${dlcHTML}`;
     document.getElementById("me-dlcs").classList.remove("oculto");
     } else {
     document.getElementById("me-dlcs")?.classList.add("oculto");
     }
-    document.getElementById("me-meta").innerHTML = metaHTML.join("");
+    document.getElementById("me-meta").innerHTML = `<div style="display:flex;gap:1.5rem;flex-wrap:wrap">${metaHTML.join("")}</div>`;
 
     // Select de estado
     const selEstado = document.getElementById("me-estado");
@@ -351,14 +360,12 @@ function meAbrirEdicion() {
             background-image:${item.imagen ? `url('${esc(item.imagen)}')` : 'none'};
             opacity:${item.imagen ? 1 : 0}">
         </div>
-        <div class="me-layout" style="grid-template-columns:1fr">
-            <div class="me-contenido" style="max-width:560px;margin:0 auto;width:100%">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-                    <span class="modal-title">EDITAR — ${esc(item.titulo)}</span>
-                    <button class="close-btn" onclick="meVolverDesdeEdicion(${id})">✕</button>
-                </div>
-                <div id="me-form-contenido" class="form-grid"></div>
+        <div style="position:relative;z-index:1;padding:2rem 2.5rem;max-height:92vh;overflow-y:auto">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+                <span class="modal-title">EDITAR — ${esc(item.titulo)}</span>
+                <button class="close-btn" onclick="meVolverDesdeEdicion(${id})">✕</button>
             </div>
+            <div id="me-form-contenido" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.75rem"></div>
         </div>`;
 
     activarEdicionEnModal(id);
@@ -424,6 +431,7 @@ function meActualizarEpisodios(color = config.color) {
     const tempActual = item.temporadas[item.progreso.temporada - 1];
 const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
                  : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
+                 : tempActual?.tipo === "pelicula" ? `PEL ${tempActual.numero}`
                  : `T${item.progreso.temporada}`;
 document.getElementById("me-progreso-texto").textContent = `${labelTemp} · Ep ${item.progreso.capitulo} — ${pct}%`;
 
@@ -443,6 +451,7 @@ function meRenderTabs(color = config.color) {
 const tabsHTML = item.temporadas.map((t, i) => {
     const label = t.tipo === "ova"      ? `OVA ${t.numero}`
                 : t.tipo === "especial" ? `ESP ${t.numero}`
+                : t.tipo === "pelicula" ? `PEL ${t.numero}`
                 : `T${t.numero}`;
     return `<button type="button" class="me-tab ${i === meTabActual ? "activo" : ""}"
         style="${i === meTabActual ? `background:${color};border-color:${color};color:#000` : ""}"
@@ -489,6 +498,7 @@ function meRenderTabContenido(color = config.color) {
                 <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px">TEMPORADA ${
     temp.tipo === "ova"      ? `OVA ${temp.numero}` :
     temp.tipo === "especial" ? `Especial ${temp.numero}` :
+    temp.tipo === "pelicula" ? `Pelicula ${temp.numero}` :
     `Temporada ${temp.numero}`
 }</span>
                 <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted)">${temp.capitulos} capítulos</span>
@@ -506,7 +516,7 @@ function meRenderTabContenido(color = config.color) {
                                  title="Ep ${n}">${n}</div>`;
                 }).join("")}
             </div>
-            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← ${temp.tipo === "ova" ? "OVA actual" : temp.tipo === "especial" ? "Especial actual" : "Temporada actual"}</p>` : ""}
+            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← ${temp.tipo === "ova" ? "OVA actual" : temp.tipo === "especial" ? "Especial actual" : temp.tipo === "pelicula" ? "Pelicula actual" : "Temporada actual"}</p>` : ""}
         </div>`;
 }
 
@@ -625,6 +635,7 @@ function parchearProgresoEpisodio(id) {
     const tempActual = item.temporadas[item.progreso.temporada - 1];
 const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
                  : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
+                 : tempActual?.tipo === "pelicula" ? `PEL ${tempActual.numero}`
                  : `T${item.progreso.temporada}`;
 card.querySelector(".progress-info").textContent = `${labelTemp} · Ep ${item.progreso.capitulo}`;
     card.querySelector(".progress-wrap").style.setProperty("--pct", `${pct}%`);

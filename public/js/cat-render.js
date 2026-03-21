@@ -63,6 +63,7 @@ function renderCard(item, idx) {
     const t = item.temporadas[item.progreso.temporada - 1];
     return t?.tipo === "ova"      ? `OVA ${t.numero}`
          : t?.tipo === "especial" ? `ESP ${t.numero}`
+         : t?.tipo === "pelicula" ? `PEL ${t.numero}`
          : `T${item.progreso.temporada}`;
 })()} · Ep ${item.progreso.capitulo}</div>
             <div class="progress-wrap" style="--pct:${pct}%"><div class="progress-fill" style="background:${color}"></div></div>
@@ -136,6 +137,7 @@ function renderListItem(item, idx) {
     const t = item.temporadas[item.progreso.temporada - 1];
     const label = t?.tipo === "ova"      ? `OVA ${t.numero}`
                 : t?.tipo === "especial" ? `ESP ${t.numero}`
+                : t?.tipo === "pelicula" ? `PEL ${t.numero}`
                 : `T${item.progreso.temporada}`;
     return ` · ${label}E${item.progreso.capitulo}`;
 })()}</span>`;

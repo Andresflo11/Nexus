@@ -46,6 +46,40 @@ form.setAttribute("autocomplete", "off");
         <option value="0">Sin valorar</option>
     </select>`);
 
+    // ── Campos de información pública ───────────────────────
+    add(`<input type="text" name="creador" placeholder="${config.creadorLabel ?? 'Creador'} (opcional)">`);
+    add(`<input type="number" name="anio" placeholder="Año de lanzamiento" min="1800" max="2100">`);
+    add(`<input type="text" name="duracion" placeholder="Duración (ej: 2h 15min, 24 eps)">`);
+
+    // Géneros: chips seleccionables
+    if (config.generosOpciones?.length) {
+        const chips = config.generosOpciones.map(g =>
+            `<span class="genero-chip" data-genero="${g}" onclick="toggleGeneroChip(this)"
+                style="display:inline-block;padding:0.25rem 0.65rem;border-radius:99px;border:1px solid var(--border2);
+                font-size:0.72rem;cursor:pointer;transition:all 0.15s;background:transparent;color:var(--muted)">${g}</span>`
+        ).join("");
+        add(`<div style="grid-column:1/-1">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Géneros</div>
+            <div id="generos-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem">${chips}</div>
+            <input type="hidden" name="generos" id="generos-hidden">
+        </div>`);
+    }
+
+    // Saga
+    add(`<input type="text" name="saga" placeholder="Saga / Franquicia (opcional)">`);
+    add(`<input type="number" name="ordenPublicacion" placeholder="Nº en orden de publicación" min="1">`);
+    add(`<input type="number" name="ordenCronologico" placeholder="Nº en orden cronológico" min="1">`);
+
+    // Links
+    add(`<div style="grid-column:1/-1">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Dónde verlo / comprarlo</div>
+        <div id="links-container-inline"></div>
+        <button type="button" onclick="agregarFilaLink('inline')"
+            style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir link
+        </button>
+    </div>`);
+
     if (config.usaPlataforma) add(`<input type="text" name="plataforma" placeholder="Plataforma">`);
     if (config.usalogros) {
     const opts = config.opcionesLogros.map(o => `<option value="${o}">${o}</option>`).join("");
@@ -53,11 +87,11 @@ form.setAttribute("autocomplete", "off");
     }
     if (config.usaEpisodios) {
         add(`<div style="grid-column:1/-1">
-    <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales</label>
+    <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / Pelicula</label>
     <div id="temporadas-container-inline"></div>
 <button type="button" onclick="agregarFilaTemporada('inline')"
         style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-        + Añadir temporada / OVA
+        + Añadir temporada / OVA / Pelicula
     </button>
 </div>
 <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
@@ -105,7 +139,15 @@ function agregarItem(e) {
         estado:     form.estado.value,
         fecha:      form.fecha.value,
         imagen:     form.imagen?.value.trim() || null,
-        valoracion: parseInt(form.querySelector('[name="valoracion"]').value) || 0
+        valoracion: parseInt(form.querySelector('[name="valoracion"]').value) || 0,
+        creador:    form.creador?.value.trim() || null,
+        anio:       parseInt(form.anio?.value) || null,
+        duracion:   form.duracion?.value.trim() || null,
+        generos:    leerGenerosSeleccionados(),
+        saga:             form.saga?.value.trim() || null,
+        ordenPublicacion: parseInt(form.ordenPublicacion?.value) || null,
+        ordenCronologico: parseInt(form.ordenCronologico?.value) || null,
+        links:      leerLinksDelForm('inline')
     };
 
     if (config.usaPlataforma) nuevo.plataforma = form.plataforma?.value.trim() || null;
@@ -159,8 +201,31 @@ function activarEdicionEnModal(id) {
     if (!item) return;
 
     let extra = "";
-    if (config.usaPlataforma)
-        extra += `<input type="text" id="input-plataforma-${id}" value="${esc(item.plataforma ?? "")}" placeholder="Plataforma">`;
+    if (config.usaPlataforma) {
+        const plataformas   = config.plataformasOpciones ?? [];
+        const actuales      = normalizarPlataformas(item.plataforma);
+        const optsPlat      = plataformas
+            .filter(p => p !== "Otro")
+            .map(p => `<option value="${p}">${p}</option>`).join("");
+        const chipsHTML     = actuales.map(p => renderPlataformaChip(p, id)).join("");
+        extra += `<div style="grid-column:1/-1" id="plat-wrap-${id}">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">${config.creadorLabel ? "Plataforma(s)" : "Plataforma(s)"}</div>
+            <div id="plat-chips-${id}" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem">${chipsHTML}</div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <select id="plat-sel-${id}" style="flex:1;font-size:0.8rem">
+                    <option value="">— Añadir plataforma —</option>
+                    ${optsPlat}
+                    <option value="__custom__">Escribir manualmente...</option>
+                </select>
+                <button type="button" onclick="agregarPlataforma(${id})"
+                    style="padding:0.45rem 0.8rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:0.8rem;white-space:nowrap">
+                    + Añadir
+                </button>
+            </div>
+            <input type="text" id="plat-custom-${id}" placeholder="Nombre de la plataforma..."
+                style="display:none;margin-top:0.4rem;width:100%;box-sizing:border-box">
+        </div>`;
+    }
     if (config.usalogros) {
     const opts = config.opcionesLogros.map(o => `<option value="${o}" ${o === item.logros ? "selected" : ""}>${o}</option>`).join("");
     extra += `<select id="input-logros-${id}">${opts}</select>`;
@@ -201,6 +266,7 @@ function activarEdicionEnModal(id) {
                 <option value="normal"  ${(t.tipo ?? "normal") === "normal"   ? "selected" : ""}>Temporada</option>
                 <option value="ova"     ${t.tipo === "ova"     ? "selected" : ""}>OVA</option>
                 <option value="especial"${t.tipo === "especial"? "selected" : ""}>Especial</option>
+                <option value="pelicula"${t.tipo === "pelicula"? "selected" : ""}>Pelicula</option>
             </select>
             <input type="number" id="temp-caps-${i}" value="${t.capitulos ?? ""}" placeholder="Nº caps" min="1" style="flex:1">
             <button type="button" onclick="eliminarFilaTemporada(${i})"
@@ -209,11 +275,11 @@ function activarEdicionEnModal(id) {
 
     extra += `
         <div style="grid-column:1/-1;margin-top:0.5rem">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales / pelicula</div>
             <div id="temporadas-container">${tempRows}</div>
             <button type="button" onclick="agregarFilaTemporada('edit')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir temporada / OVA
+                + Añadir temporada / OVA / pelicula
             </button>
         </div>
         <input type="number" id="input-temporada-actual-${id}" value="${item.progreso?.temporada ?? 1}" placeholder="Temporada actual (índice)">
@@ -294,12 +360,50 @@ function activarEdicionEnModal(id) {
         return `<option value="${v}" ${item.valoracion == v ? "selected" : ""}>${labels[v]}</option>`;
     }).join("");
 
+    // ── Géneros chips para edición ────────────────────────────
+    const generosActuales = Array.isArray(item.generos) ? item.generos : [];
+    let generosEditHTML = "";
+    if (config.generosOpciones?.length) {
+        const chips = config.generosOpciones.map(g => {
+            const sel = generosActuales.includes(g);
+            return `<span class="genero-chip${sel ? " seleccionado" : ""}" data-genero="${g}" onclick="toggleGeneroChip(this)"
+                style="display:inline-block;padding:0.25rem 0.65rem;border-radius:99px;border:1px solid ${sel ? config.color : "var(--border2)"};
+                font-size:0.72rem;cursor:pointer;transition:all 0.15s;background:${sel ? config.color + "25" : "transparent"};color:${sel ? config.color : "var(--muted)"}">${g}</span>`;
+        }).join("");
+        generosEditHTML = `<div style="grid-column:1/-1;margin-top:0.5rem">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Géneros</div>
+            <div id="generos-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem">${chips}</div>
+            <input type="hidden" name="generos" id="generos-hidden">
+        </div>`;
+    }
+
+    // ── Links para edición ───────────────────────────────────
+    const linksActuales = Array.isArray(item.links) ? item.links : [];
+    linkContador = linksActuales.length;
+    const linkRows = linksActuales.map((l, i) => renderFilaLink(i, l)).join("");
+    const linksEditHTML = `<div style="grid-column:1/-1;margin-top:0.5rem">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Dónde verlo / comprarlo</div>
+        <div id="links-container">${linkRows}</div>
+        <button type="button" onclick="agregarFilaLink('edit')"
+            style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir link
+        </button>
+    </div>`;
+
     document.getElementById("me-form-contenido").innerHTML = `
         <input type="text" id="input-titulo-${id}" value="${esc(item.titulo)}" placeholder="Título">
         <select id="input-estado-${id}">${estadoOpts}</select>
         <input type="date" id="edit-fecha-${id}" value="${item.fecha ?? ""}">
         <input type="text" id="input-imagen-${id}" value="${esc(item.imagen ?? "")}" placeholder="URL imagen">
         <select id="input-valoracion-${id}">${valOpts}</select>
+        <input type="text" id="input-creador-${id}" value="${esc(item.creador ?? "")}" placeholder="${config.creadorLabel ?? 'Creador'}">
+        <input type="number" id="input-anio-${id}" value="${item.anio ?? ""}" placeholder="Año de lanzamiento" min="1800" max="2100">
+        <input type="text" id="input-duracion-${id}" value="${esc(item.duracion ?? "")}" placeholder="Duración">
+        ${generosEditHTML}
+        <input type="text" id="input-saga-${id}" value="${esc(item.saga ?? "")}" placeholder="Saga / Franquicia">
+        <input type="number" id="input-orden-pub-${id}" value="${item.ordenPublicacion ?? ""}" placeholder="Nº orden publicación" min="1">
+        <input type="number" id="input-orden-cron-${id}" value="${item.ordenCronologico ?? ""}" placeholder="Nº orden cronológico" min="1">
+        ${linksEditHTML}
         ${extra}
         <div style="display:flex;gap:0.75rem;margin-top:0.5rem;grid-column:1/-1">
             <button onclick="guardarEdicionCompleta(${id});meVolverDesdeEdicion(${id})"
@@ -328,11 +432,20 @@ function guardarEdicionCompleta(id) {
         estado:     document.getElementById(`input-estado-${id}`).value,
         fecha:      document.getElementById(`edit-fecha-${id}`).value,
         imagen:     document.getElementById(`input-imagen-${id}`).value.trim() || null,
-        valoracion: parseInt(document.getElementById(`input-valoracion-${id}`).value)
+        valoracion: parseInt(document.getElementById(`input-valoracion-${id}`).value),
+        creador:    document.getElementById(`input-creador-${id}`)?.value.trim() || null,
+        anio:       parseInt(document.getElementById(`input-anio-${id}`)?.value) || null,
+        duracion:   document.getElementById(`input-duracion-${id}`)?.value.trim() || null,
+        generos:    leerGenerosSeleccionados(),
+        saga:             document.getElementById(`input-saga-${id}`)?.value.trim() || null,
+        ordenPublicacion: parseInt(document.getElementById(`input-orden-pub-${id}`)?.value) || null,
+        ordenCronologico: parseInt(document.getElementById(`input-orden-cron-${id}`)?.value) || null,
+        links:      leerLinksDelForm('edit')
     };
 
-    if (config.usaPlataforma)
-        actualizado.plataforma = document.getElementById(`input-plataforma-${id}`)?.value.trim() || null;
+    if (config.usaPlataforma) {
+        actualizado.plataforma = leerPlataformasChips(id);
+    }
     if (config.usalogros)
         actualizado.logros = document.getElementById(`input-logros-${id}`)?.value ?? 'No tiene logros';
     if (config.usaEpisodios) {
@@ -432,7 +545,7 @@ function parchearCard(id) {
     const color = config.color ?? "#888";
 if (metaEl) metaEl.innerHTML = `
     <span class="card-tag tag-estado">${esc(item.estado)}</span>
-    ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
+    ${normalizarPlataformas(item.plataforma).map(p => `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(p)}</span>`).join("")}
     ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
 
     if (config.usalogros) {
@@ -507,7 +620,7 @@ function parchearCardEstado(id) {
     const metaEl = card.querySelector(".card-meta");
     if (metaEl) metaEl.innerHTML = `
     <span class="card-tag tag-estado">${esc(item.estado)}</span>
-    ${item.plataforma ? `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(item.plataforma)}</span>` : ""}
+    ${normalizarPlataformas(item.plataforma).map(p => `<span class="card-tag tag-plataforma" style="background:${color}15;border-color:${color}40;color:${color}">${esc(p)}</span>`).join("")}
     ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `<span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>` : ""}`;
 }
 
@@ -675,6 +788,7 @@ function agregarFilaTemporada(modo) {
             <option value="normal">Temporada</option>
             <option value="ova">OVA</option>
             <option value="especial">Especial</option>
+            <option value="pelicula">Pelicula</option>
         </select>
         <input type="number" id="temp-caps-${i}" placeholder="Nº caps" min="1" style="flex:1">
         <button type="button" onclick="eliminarFilaTemporada(${i})"
@@ -692,7 +806,7 @@ function leerTemporadasDelForm() {
                    ?? document.getElementById("temporadas-container-new");   // modal universal
     if (!container) return null;
 
-    const contadores = { normal: 0, ova: 0, especial: 0 };
+    const contadores = { normal: 0, ova: 0, especial: 0 , pelicula: 0};
     const temporadas = [];
 
     container.querySelectorAll("[id^='temp-caps-']").forEach(input => {
@@ -797,4 +911,152 @@ async function sincronizarRelacionadosRemoto(itemId, relIds) {
     } catch(e) {
         console.error("Error sincronizando relacionados:", e);
     }
+}
+
+// ── Plataformas múltiples: widget chips ───────────────────
+
+function renderPlataformaChip(nombre, id) {
+    const color = config?.color ?? "#888";
+    return `<span id="plat-chip-${id}-${CSS.escape(nombre)}"
+        style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.55rem;
+        border-radius:99px;border:1px solid ${color}50;background:${color}15;
+        color:${color};font-size:0.72rem">
+        ${esc(nombre)}
+        <button type="button" onclick="quitarPlataforma('${esc(nombre)}',${id})"
+            style="background:none;border:none;color:inherit;cursor:pointer;padding:0;
+            font-size:0.7rem;line-height:1;opacity:0.7" title="Quitar">✕</button>
+    </span>`;
+}
+
+function agregarPlataforma(id) {
+    const sel    = document.getElementById(`plat-sel-${id}`);
+    const custom = document.getElementById(`plat-custom-${id}`);
+    const chips  = document.getElementById(`plat-chips-${id}`);
+    if (!sel || !chips) return;
+
+    let nombre = sel.value;
+    if (nombre === "__custom__") {
+        if (custom) {
+            custom.style.display = "block";
+            custom.focus();
+            custom.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); confirmarPlataformaCustom(id); } };
+        }
+        return;
+    }
+    if (!nombre) return;
+
+    // Evitar duplicados
+    if (chips.querySelector(`[id="plat-chip-${id}-${CSS.escape(nombre)}"]`)) return;
+    chips.insertAdjacentHTML("beforeend", renderPlataformaChip(nombre, id));
+    sel.value = "";
+}
+
+function confirmarPlataformaCustom(id) {
+    const custom = document.getElementById(`plat-custom-${id}`);
+    const chips  = document.getElementById(`plat-chips-${id}`);
+    const sel    = document.getElementById(`plat-sel-${id}`);
+    if (!custom || !chips) return;
+    const nombre = custom.value.trim();
+    if (!nombre) return;
+    if (!chips.querySelector(`[id="plat-chip-${id}-${CSS.escape(nombre)}"]`))
+        chips.insertAdjacentHTML("beforeend", renderPlataformaChip(nombre, id));
+    custom.value        = "";
+    custom.style.display = "none";
+    if (sel) sel.value  = "";
+}
+
+function quitarPlataforma(nombre, id) {
+    document.getElementById(`plat-chip-${id}-${CSS.escape(nombre)}`)?.remove();
+}
+
+function leerPlataformasChips(id) {
+    const chips = document.getElementById(`plat-chips-${id}`);
+    if (!chips) return null;
+    const plats = [...chips.querySelectorAll("span[id^='plat-chip-']")]
+        .map(el => el.childNodes[0]?.textContent?.trim())
+        .filter(Boolean);
+    return plats.length ? plats : null;
+}
+
+// ── Géneros: chips seleccionables ─────────────────────────
+
+function toggleGeneroChip(el) {
+    const color = config?.color ?? "#7c5cfc";
+    const activo = el.classList.toggle("seleccionado");
+    el.style.background   = activo ? color + "25" : "transparent";
+    el.style.borderColor  = activo ? color : "var(--border2)";
+    el.style.color        = activo ? color : "var(--muted)";
+}
+
+function leerGenerosSeleccionados() {
+    const chips = document.querySelectorAll(".genero-chip.seleccionado");
+    const generos = [...chips].map(c => c.dataset.genero);
+    return generos.length ? generos : null;
+}
+
+// ── Links: filas dinámicas ────────────────────────────────
+
+let linkContador = 0;
+
+// Plataformas predefinidas con sus colores
+const PLATAFORMAS_PREDEFINIDAS = [
+    { nombre: "Netflix",       color: "#e50914" },
+    { nombre: "Steam",         color: "#1b2838" },
+    { nombre: "Prime Video",   color: "#00a8e0" },
+    { nombre: "Disney+",       color: "#113ccf" },
+    { nombre: "HBO Max",       color: "#5822b4" },
+    { nombre: "Apple TV+",     color: "#555555" },
+    { nombre: "Crunchyroll",   color: "#f47521" },
+    { nombre: "Spotify",       color: "#1db954" },
+    { nombre: "YouTube",       color: "#ff0000" },
+    { nombre: "Epic Games",    color: "#2d2d2d" },
+    { nombre: "PlayStation",   color: "#003087" },
+    { nombre: "Xbox",          color: "#107c10" },
+    { nombre: "Nintendo",      color: "#e4000f" },
+    { nombre: "GOG",           color: "#86328a" },
+    { nombre: "Otro",          color: "#6b7280" }
+];
+
+function renderFilaLink(i, datos = {}) {
+    const optsPlataforma = PLATAFORMAS_PREDEFINIDAS.map(p =>
+        `<option value="${p.nombre}" ${datos.plataforma === p.nombre ? "selected" : ""}>${p.nombre}</option>`
+    ).join("");
+    return `<div id="link-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;grid-column:1/-1">
+        <select id="link-plataforma-${i}" style="flex-shrink:0;width:130px;font-size:0.8rem"
+            onchange="actualizarColorLink(${i})">
+            ${optsPlataforma}
+        </select>
+        <input type="text" id="link-nombre-${i}" value="${esc(datos.nombre ?? "")}" placeholder="Nombre personalizado (opcional)" style="flex:1;font-size:0.8rem">
+        <input type="url"  id="link-url-${i}"    value="${esc(datos.url ?? "")}"    placeholder="https://..." style="flex:2;font-size:0.8rem">
+        <button type="button" onclick="eliminarFilaLink(${i})"
+            style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>
+    </div>`;
+}
+
+function agregarFilaLink(modo) {
+    const containerId = modo === "edit" ? "links-container" : "links-container-inline";
+    const container   = document.getElementById(containerId);
+    if (!container) return;
+    const i = linkContador++;
+    container.insertAdjacentHTML("beforeend", renderFilaLink(i));
+}
+
+function eliminarFilaLink(i) {
+    document.getElementById(`link-row-${i}`)?.remove();
+}
+
+function leerLinksDelForm(modo) {
+    const containerId = modo === "edit" ? "links-container" : "links-container-inline";
+    const container   = document.getElementById(containerId);
+    if (!container) return null;
+    const links = [];
+    container.querySelectorAll("[id^='link-url-']").forEach(input => {
+        const i          = input.id.split("-").pop();
+        const url        = input.value.trim();
+        if (!url) return;
+        const plataforma = document.getElementById(`link-plataforma-${i}`)?.value ?? "Otro";
+        const nombre     = document.getElementById(`link-nombre-${i}`)?.value.trim() || plataforma;
+        links.push({ plataforma, nombre, url });
+    });
+    return links.length ? links : null;
 }

@@ -65,6 +65,7 @@ function cambiarTipoFormModal(nuevoTipo) {
 
 function buildFormModalCampos(t) {
     temporadaContador = 0;
+    linkContador      = 0;
     const cfg      = CONFIG[t];
     const color    = cfg.color ?? "#888";
     const form     = document.getElementById("form-modal-campos");
@@ -73,9 +74,9 @@ function buildFormModalCampos(t) {
 
     const add = (html) => form.insertAdjacentHTML("beforeend", html);
 
+    // ── Campos base ───────────────────────────────────────────
     add(`<input type="text" name="titulo" placeholder="Título" required>`);
 
-    // Select de estado
     const selEstado = document.createElement("select");
     selEstado.name  = "estado";
     cfg.estados.forEach(e => {
@@ -97,26 +98,81 @@ function buildFormModalCampos(t) {
         <option value="0">Sin valorar</option>
     </select>`);
 
-    if (cfg.usaPlataforma)
-        add(`<input type="text" name="plataforma" placeholder="Plataforma">`);
+    // ── Plataforma como chips múltiples ───────────────────────
+    if (cfg.usaPlataforma) {
+        const plataformas = (cfg.plataformasOpciones ?? []).filter(p => p !== "Otro");
+        const optsPlat    = plataformas.map(p => `<option value="${p}">${p}</option>`).join("");
+        add(`<div style="grid-column:1/-1" id="plat-wrap-fmm">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Plataforma(s)</div>
+            <div id="plat-chips-fmm" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem"></div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <select id="plat-sel-fmm" style="flex:1;font-size:0.8rem">
+                    <option value="">— Añadir plataforma —</option>
+                    ${optsPlat}
+                    <option value="__custom__">Escribir manualmente...</option>
+                </select>
+                <button type="button" onclick="fmmAgregarPlataforma()"
+                    style="padding:0.45rem 0.8rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:0.8rem;white-space:nowrap">
+                    + Añadir
+                </button>
+            </div>
+            <input type="text" id="plat-custom-fmm" placeholder="Nombre de la plataforma..."
+                style="display:none;margin-top:0.4rem;width:100%;box-sizing:border-box">
+        </div>`)
+    }
 
     if (cfg.usalogros) {
         const opts = cfg.opcionesLogros.map(o => `<option value="${o}">${o}</option>`).join("");
         add(`<select name="logros">${opts}</select>`);
     }
 
-    if (cfg.usaEpisodios) {
+    // ── Campos de información pública ─────────────────────────
+    add(`<input type="text" name="creador" placeholder="${cfg.creadorLabel ?? 'Creador'} (opcional)">`);
+    add(`<input type="number" name="anio" placeholder="Año de lanzamiento" min="1800" max="2100">`);
+    add(`<input type="text" name="duracion" placeholder="Duración (ej: 2h 15min, 24 eps)">`);
+
+    // Géneros como chips
+    if (cfg.generosOpciones?.length) {
+        const chips = cfg.generosOpciones.map(g =>
+            `<span class="genero-chip" data-genero="${g}" onclick="toggleGeneroChip(this)"
+                style="display:inline-block;padding:0.25rem 0.65rem;border-radius:99px;
+                border:1px solid var(--border2);font-size:0.72rem;cursor:pointer;
+                transition:all 0.15s;background:transparent;color:var(--muted)">${g}</span>`
+        ).join("");
+        add(`<div style="grid-column:1/-1">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Géneros</div>
+            <div id="generos-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem">${chips}</div>
+        </div>`);
+    }
+
+    // Saga y orden
+    add(`<input type="text" name="saga" placeholder="Saga / Franquicia (opcional)">`);
+    add(`<input type="number" name="ordenPublicacion" placeholder="Nº orden publicación" min="1">`);
+    add(`<input type="number" name="ordenCronologico" placeholder="Nº orden cronológico" min="1">`);
+
+    // Links
     add(`<div style="grid-column:1/-1">
-        <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales</label>
-        <div id="temporadas-container-new"></div>
-        <button type="button" data-action="add-temporada"
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Dónde verlo / comprarlo</div>
+        <div id="links-container-fmm"></div>
+        <button type="button" onclick="agregarFilaLinkFmm()"
             style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-            + Añadir temporada / OVA
+            + Añadir link
         </button>
-    </div>
-    <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
-    <div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
-}
+    </div>`);
+
+    // ── Campos específicos por tipo ────────────────────────────
+    if (cfg.usaEpisodios) {
+        add(`<div style="grid-column:1/-1">
+            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / pelicula</label>
+            <div id="temporadas-container-new"></div>
+            <button type="button" data-action="add-temporada"
+                style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+                + Añadir temporada / OVA / pelicula
+            </button>
+        </div>
+        <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
+        <div class="number-wrap"><input type="number" name="capituloActualEp" placeholder="Capítulo actual" min="0"></div>`);
+    }
 
     if (cfg.usaTomos) {
         add(`<div style="grid-column:1/-1">
@@ -163,17 +219,120 @@ function buildFormModalCampos(t) {
         </div>`);
     }
 
-    // Botón guardar con color de categoría
-    add(`<button type="submit" style="grid-column:1/-1;background:${color};color:#000;border:none;padding:0.75rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:0.9rem;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    // ── Botón guardar ──────────────────────────────────────────
+    add(`<button type="submit" style="grid-column:1/-1;background:${color};color:#000;border:none;padding:0.75rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:0.9rem;cursor:pointer;transition:opacity 0.15s"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
         Guardar
     </button>`);
 
     form.onsubmit = (e) => guardarFormModal(e, t);
+
     setTimeout(() => {
-    document.getElementById("temporadas-container-new");
-    const btnTemp = document.querySelector("#form-modal-campos button[data-action='add-temporada']");
-    if (btnTemp) btnTemp.addEventListener("click", () => agregarFilaTemporada('new'));
-}, 0);
+        const btnTemp = document.querySelector("#form-modal-campos button[data-action='add-temporada']");
+        if (btnTemp) btnTemp.addEventListener("click", () => agregarFilaTemporada('new'));
+    }, 0);
+}
+
+// ── Plataforma múltiple en form-modal ────────────────────
+
+function fmmAgregarPlataforma() {
+    const sel    = document.getElementById("plat-sel-fmm");
+    const custom = document.getElementById("plat-custom-fmm");
+    const chips  = document.getElementById("plat-chips-fmm");
+    if (!sel || !chips) return;
+
+    let nombre = sel.value;
+    if (nombre === "__custom__") {
+        if (custom) {
+            custom.style.display = "block";
+            custom.focus();
+            custom.onkeydown = (e) => {
+                if (e.key === "Enter") { e.preventDefault(); fmmConfirmarPlataformaCustom(); }
+            };
+        }
+        return;
+    }
+    if (!nombre) return;
+    if (chips.querySelector(`[data-plat="${CSS.escape(nombre)}"]`)) return;
+    chips.insertAdjacentHTML("beforeend", fmmRenderChip(nombre));
+    sel.value = "";
+}
+
+function fmmConfirmarPlataformaCustom() {
+    const custom = document.getElementById("plat-custom-fmm");
+    const chips  = document.getElementById("plat-chips-fmm");
+    const sel    = document.getElementById("plat-sel-fmm");
+    if (!custom || !chips) return;
+    const nombre = custom.value.trim();
+    if (!nombre) return;
+    if (!chips.querySelector(`[data-plat="${CSS.escape(nombre)}"]`))
+        chips.insertAdjacentHTML("beforeend", fmmRenderChip(nombre));
+    custom.value        = "";
+    custom.style.display = "none";
+    if (sel) sel.value  = "";
+}
+
+function fmmRenderChip(nombre) {
+    const color = CONFIG[formModalTipoActual]?.color ?? "#888";
+    return `<span data-plat="${esc(nombre)}"
+        style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.55rem;
+        border-radius:99px;border:1px solid ${color}50;background:${color}15;
+        color:${color};font-size:0.72rem">
+        ${esc(nombre)}
+        <button type="button" onclick="this.parentElement.remove()"
+            style="background:none;border:none;color:inherit;cursor:pointer;padding:0;font-size:0.7rem;opacity:0.7">✕</button>
+    </span>`;
+}
+
+function leerPlataformasFmm() {
+    const chips = document.getElementById("plat-chips-fmm");
+    if (!chips) return null;
+    const plats = [...chips.querySelectorAll("[data-plat]")]
+        .map(el => el.dataset.plat)
+        .filter(Boolean);
+    return plats.length ? plats : null;
+}
+
+// ── Links específicos del form-modal ─────────────────────
+let fmmLinkContador = 0;
+
+function agregarFilaLinkFmm() {
+    const container = document.getElementById("links-container-fmm");
+    if (!container) return;
+    const i = fmmLinkContador++;
+    const optsPlataforma = PLATAFORMAS_PREDEFINIDAS.map(p =>
+        `<option value="${p.nombre}">${p.nombre}</option>`
+    ).join("");
+    container.insertAdjacentHTML("beforeend", `
+        <div id="fmm-link-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;flex-wrap:wrap">
+            <select id="fmm-link-plataforma-${i}" style="flex-shrink:0;width:130px;font-size:0.8rem"
+                onchange="fmmToggleLinkCustom(${i})">
+                ${optsPlataforma}
+            </select>
+            <input type="text" id="fmm-link-nombre-${i}" placeholder="Nombre (opcional)" style="flex:1;min-width:100px;font-size:0.8rem">
+            <input type="url"  id="fmm-link-url-${i}"    placeholder="https://..."       style="flex:2;min-width:140px;font-size:0.8rem">
+            <button type="button" onclick="document.getElementById('fmm-link-row-${i}').remove()"
+                style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>
+        </div>`);
+}
+
+function fmmToggleLinkCustom(i) {
+    // No necesita toggle porque el campo nombre ya sirve como personalización
+}
+
+function leerLinksFmm() {
+    const container = document.getElementById("links-container-fmm");
+    if (!container) return null;
+    const links = [];
+    container.querySelectorAll("[id^='fmm-link-url-']").forEach(input => {
+        const i          = input.id.replace("fmm-link-url-", "");
+        const url        = input.value.trim();
+        if (!url) return;
+        const plataforma = document.getElementById(`fmm-link-plataforma-${i}`)?.value ?? "Otro";
+        const nombre     = document.getElementById(`fmm-link-nombre-${i}`)?.value.trim() || plataforma;
+        links.push({ plataforma, nombre, url });
+    });
+    return links.length ? links : null;
 }
 
 async function guardarFormModal(e, t) {
@@ -182,25 +341,33 @@ async function guardarFormModal(e, t) {
     const cfg  = CONFIG[t];
 
     const nuevo = {
-        tipo:      t,
-        titulo:    form.titulo.value.trim(),
-        estado:    form.estado.value,
-        fecha:     form.fecha.value,
-        imagen:    form.imagen?.value.trim() || null,
-        valoracion: parseInt(form.querySelector('[name="valoracion"]').value) || 0
+        tipo:       t,
+        titulo:     form.titulo.value.trim(),
+        estado:     form.estado.value,
+        fecha:      form.fecha.value,
+        imagen:     form.imagen?.value.trim() || null,
+        valoracion: parseInt(form.querySelector('[name="valoracion"]').value) || 0,
+        plataforma: cfg.usaPlataforma ? leerPlataformasFmm() : null,
+        creador:    form.creador?.value.trim() || null,
+        anio:       parseInt(form.anio?.value) || null,
+        duracion:   form.duracion?.value.trim() || null,
+        generos:    leerGenerosSeleccionados(),
+        saga:             form.saga?.value.trim() || null,
+        ordenPublicacion: parseInt(form.ordenPublicacion?.value) || null,
+        ordenCronologico: parseInt(form.ordenCronologico?.value) || null,
+        links:      leerLinksFmm()
     };
 
-    if (cfg.usaPlataforma)   nuevo.plataforma  = form.plataforma?.value.trim() || null;
     if (cfg.usalogros)       nuevo.logros      = form.logros?.value ?? "No tiene logros";
     if (cfg.usaEstadoSerie)  nuevo.estadoSerie = form.estadoSerie?.value || null;
 
     if (cfg.usaEpisodios) {
-    nuevo.temporadas = leerTemporadasDelForm();
-    nuevo.progreso   = {
-        temporada: parseInt(form.querySelector('[name="temporadaActual"]')?.value)  || 1,
-        capitulo:  parseInt(form.querySelector('[name="capituloActualEp"]')?.value) || 0
-    };
-}
+        nuevo.temporadas = leerTemporadasDelForm();
+        nuevo.progreso   = {
+            temporada: parseInt(form.querySelector('[name="temporadaActual"]')?.value)  || 1,
+            capitulo:  parseInt(form.querySelector('[name="capituloActualEp"]')?.value) || 0
+        };
+    }
 
     if (cfg.usaTomos) {
         nuevo.tomos         = leerTomosDeLForm();
@@ -228,8 +395,8 @@ async function guardarFormModal(e, t) {
         });
         cerrarFormModal();
         resetDatePickers();
+        fmmLinkContador = 0;
 
-        // Recargar según en qué página estemos
         if (typeof cargarDashboard === "function") cargarDashboard();
         if (typeof cargarItems     === "function") cargarItems();
     } catch (err) {

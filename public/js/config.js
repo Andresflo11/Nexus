@@ -38,7 +38,10 @@ const CONFIG = {
         usaEstadoSerie: false,
         usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Desarrollador",
+        generosOpciones: ["Acción", "Aventura", "RPG", "Estrategia", "Simulación", "Deportes", "Carreras", "Lucha", "Terror", "Plataformas", "Puzzle", "Indie", "MMORPG", "Battle Royale", "Shooter", "Visual Novel","Metroidvania"],
+        plataformasOpciones: ["PC", "PlayStation 5", "PlayStation 4", "Xbox Series X/S", "Xbox One", "Nintendo Switch", "iOS", "Android", "Steam Deck", "Otro"]
     },
 
     // ── Animes ───────────────────────────────────────────────
@@ -54,7 +57,10 @@ const CONFIG = {
         usaEstadoSerie: true,
         usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Estudio",
+        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Ciencia Ficción", "Romance", "Terror", "Misterio", "Slice of Life", "Deportes", "Mecha", "Isekai", "Shounen", "Shoujo", "Seinen", "Josei", "Ecchi", "Mahou Shoujo"],
+        plataformasOpciones: ["Crunchyroll", "Netflix", "Prime Video", "Disney+", "HBO Max", "Apple TV+", "Funimation", "HIDIVE", "Otro"]
     },
 
     // ── Películas ────────────────────────────────────────────
@@ -70,7 +76,10 @@ const CONFIG = {
         usaEstadoSerie: false,
         usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Director",
+        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Terror", "Thriller", "Ciencia Ficción", "Fantasía", "Animación", "Documental", "Romance", "Crimen", "Misterio", "Musical", "Bélica", "Western"],
+        plataformasOpciones: ["Netflix", "Prime Video", "Disney+", "HBO Max", "Apple TV+", "Movistar+", "Cine", "Blu-ray / DVD", "Otro"]
     },
 
     // ── Series ───────────────────────────────────────────────
@@ -86,7 +95,10 @@ const CONFIG = {
         usaEstadoSerie: true,
         usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Creador",
+        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Terror", "Thriller", "Ciencia Ficción", "Fantasía", "Animación", "Documental", "Romance", "Crimen", "Misterio", "Reality", "Procedural"],
+        plataformasOpciones: ["Netflix", "Prime Video", "Disney+", "HBO Max", "Apple TV+", "Movistar+", "Crunchyroll", "Paramount+", "Peacock", "Otro"]
     },
 
     // ── Cómics ───────────────────────────────────────────────
@@ -102,7 +114,10 @@ const CONFIG = {
         usaEstadoSerie: false,
         usaCapitulos:   true,
         usaPaginas:     false,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Autor",
+        generosOpciones: ["Superhéroes", "Acción", "Aventura", "Ciencia Ficción", "Fantasía", "Terror", "Drama", "Humor", "Thriller", "Histórico", "Manga-estilo", "Indie"],
+        plataformasOpciones: ["Físico", "Marvel Unlimited", "DC Universe Infinite", "ComiXology", "Webtoon", "Otro"]
     },
 
     // ── Libros ───────────────────────────────────────────────
@@ -118,7 +133,10 @@ const CONFIG = {
         usaEstadoSerie: false,
         usaCapitulos:   false,
         usaPaginas:     true,
-        usaTomos:       false
+        usaTomos:       false,
+        creadorLabel:   "Autor",
+        generosOpciones: ["Novela", "Fantasía", "Ciencia Ficción", "Terror", "Thriller", "Misterio", "Romance", "Historia", "Biografía", "Ensayo", "Autoayuda", "Poesía", "Infantil", "Young Adult", "Clásico", "Distopía","Novela ligera","Comedia","Ficcion"],
+        plataformasOpciones: ["Físico", "Kindle", "Apple Books", "Google Play Books", "Audible", "Kobo", "Scribd", "Otro"]
     },
 
     // ── Mangas ───────────────────────────────────────────────
@@ -134,7 +152,10 @@ const CONFIG = {
         usaEstadoSerie: true,
         usaCapitulos:   false,
         usaPaginas:     false,
-        usaTomos:       true
+        usaTomos:       true,
+        creadorLabel:   "Mangaka",
+        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Ciencia Ficción", "Romance", "Terror", "Misterio", "Slice of Life", "Deportes", "Mecha", "Isekai", "Shounen", "Shoujo", "Seinen", "Josei", "Ecchi", "Mahou Shoujo", "Histórico"],
+        plataformasOpciones: ["Físico", "Crunchyroll Manga", "MangaPlus", "Viz Media", "Kindle", "Comixology", "Otro"]
     }
 };
 
@@ -210,4 +231,12 @@ function esc(str) {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
+}
+
+// Normaliza plataforma: acepta string legacy o array nuevo → siempre devuelve array
+function normalizarPlataformas(val) {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === "string") return [val];
+    return [];
 }
