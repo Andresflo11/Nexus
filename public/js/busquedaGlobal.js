@@ -196,9 +196,37 @@ buscador.addEventListener("input", function () {
                     }
                     const tipoActual = new URLSearchParams(window.location.search).get("tipo");
                     if (tipoActual === item.tipo) {
-                        window.location.hash = `card-${item.id}`;
+                        // Comprobar si la card está visible en la página actual
+                        const cardEnDOM = document.getElementById(`card-${item.id}`);
+                        if (cardEnDOM) {
+                            // Está en la página actual — scroll directo
+                            cardEnDOM.scrollIntoView({ behavior: "smooth", block: "center" });
+                            cardEnDOM.style.outline = `2px solid ${CONFIG[item.tipo]?.color ?? "var(--accent)"}`;
+                            cardEnDOM.style.outlineOffset = "3px";
+                            setTimeout(() => { cardEnDOM.style.outline = ""; cardEnDOM.style.outlineOffset = ""; }, 2000);
+                        } else {
+                            // Está en otra página de la paginación — buscarla y navegar
+                            if (typeof dataOriginal !== "undefined" && typeof catPaginaActual !== "undefined") {
+                                const idx = dataOriginal.findIndex(i => i.id === item.id);
+                                if (idx !== -1) {
+                                    catPaginaActual = Math.floor(idx / CAT_POR_PAGINA) + 1;
+                                    aplicarOrden();
+                                    setTimeout(() => {
+                                        const card = document.getElementById(`card-${item.id}`);
+                                        if (card) {
+                                            card.scrollIntoView({ behavior: "smooth", block: "center" });
+                                            card.style.outline = `2px solid ${CONFIG[item.tipo]?.color ?? "var(--accent)"}`;
+                                            card.style.outlineOffset = "3px";
+                                            setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 2000);
+                                        }
+                                    }, 150);
+                                }
+                            } else {
+                                window.location.hash = `card-${item.id}`;
+                            }
+                        }
                     } else {
-                        window.location.href = `/pages/categoria.html?tipo=${item.tipo}#card-${item.id}`;
+                        window.location.href = `/pages/categoria.html?tipo=${item.tipo}&buscarId=${item.id}`;
                     }
                 });
 

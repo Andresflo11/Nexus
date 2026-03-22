@@ -12,6 +12,9 @@
 // ║  · extraerAño()     — helper para ordenar por año       ║
 // ╚══════════════════════════════════════════════════════════╝
 
+const CAT_POR_PAGINA = 54;
+let catPaginaActual  = 1;
+
 // ── Renderizar card del grid ──────────────────────────────
 function renderCard(item, idx) {
     const color   = config.color ?? "#888";
@@ -187,11 +190,69 @@ function renderListItem(item, idx) {
     </div>`;
 }
 
+function crearPaginacionCat(totalPags) {
+    if (totalPags <= 1) return null;
+    const pag = document.createElement("div");
+    pag.style.cssText = "display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;flex-wrap:wrap";
+
+    const estilo = (activo) =>
+        `padding:0.4rem 0.85rem;border-radius:8px;border:1px solid ${activo ? config.color : "var(--border)"};background:${activo ? `${config.color}20` : "var(--surface)"};color:${activo ? config.color : "var(--muted)"};font-family:'JetBrains Mono',monospace;font-size:0.72rem;cursor:${activo ? "default" : "pointer"};transition:all 0.15s`;
+
+    const btnPrev = document.createElement("button");
+    btnPrev.textContent = "←";
+    btnPrev.style.cssText = estilo(false);
+    btnPrev.disabled = catPaginaActual === 1;
+    if (catPaginaActual === 1) btnPrev.style.opacity = "0.3";
+    btnPrev.onclick = () => { catPaginaActual--; aplicarOrden(); window.scrollTo({top:0,behavior:"smooth"}); };
+    pag.appendChild(btnPrev);
+
+    for (let p = 1; p <= totalPags; p++) {
+        if (totalPags > 7 && Math.abs(p - catPaginaActual) > 2 && p !== 1 && p !== totalPags) {
+            if (p === 2 || p === totalPags - 1) {
+                const dots = document.createElement("span");
+                dots.textContent = "…";
+                dots.style.cssText = "color:var(--muted);font-size:0.8rem;padding:0 0.2rem";
+                pag.appendChild(dots);
+            }
+            continue;
+        }
+        const btn = document.createElement("button");
+        btn.textContent = p;
+        btn.style.cssText = estilo(p === catPaginaActual);
+        if (p !== catPaginaActual) {
+            btn.onmouseover = () => { btn.style.borderColor = config.color; btn.style.color = config.color; };
+            btn.onmouseout  = () => { btn.style.borderColor = "var(--border)"; btn.style.color = "var(--muted)"; };
+            btn.onclick = () => { catPaginaActual = p; aplicarOrden(); window.scrollTo({top:0,behavior:"smooth"}); };
+        }
+        pag.appendChild(btn);
+    }
+
+    const btnNext = document.createElement("button");
+    btnNext.textContent = "→";
+    btnNext.style.cssText = estilo(false);
+    btnNext.disabled = catPaginaActual === totalPags;
+    if (catPaginaActual === totalPags) btnNext.style.opacity = "0.3";
+    btnNext.onclick = () => { catPaginaActual++; aplicarOrden(); window.scrollTo({top:0,behavior:"smooth"}); };
+    pag.appendChild(btnNext);
+
+    return pag;
+}
+
 // ── Renderizar la lista completa ──────────────────────────
 function mostrar(lista) {
-    const contenedor = document.getElementById("lista");
+    const contenedor  = document.getElementById("lista");
+    const totalPags   = Math.ceil(lista.length / CAT_POR_PAGINA);
+    catPaginaActual   = Math.min(catPaginaActual, totalPags || 1);
+    const paginada    = lista.slice((catPaginaActual - 1) * CAT_POR_PAGINA, catPaginaActual * CAT_POR_PAGINA);
+
     document.getElementById("showing-count").textContent =
         `${lista.length} elemento${lista.length !== 1 ? "s" : ""}`;
+
+    // Paginación arriba y abajo
+    const elArr = document.getElementById("cat-pag-arriba");
+    const elAba = document.getElementById("cat-pag-abajo");
+    if (elArr) { elArr.innerHTML = ""; const p = crearPaginacionCat(totalPags); if (p) elArr.appendChild(p); }
+    if (elAba) { elAba.innerHTML = ""; const p = crearPaginacionCat(totalPags); if (p) elAba.appendChild(p); }
 
     if (!lista.length) {
         contenedor.innerHTML = `
@@ -205,10 +266,10 @@ function mostrar(lista) {
 
     if (vistaActual === "grid") {
         contenedor.className = "media-grid";
-        contenedor.innerHTML = lista.map((item, i) => renderCard(item, i)).join("");
+        contenedor.innerHTML = paginada.map((item, i) => renderCard(item, i)).join("");
     } else {
         contenedor.className = "media-list";
-        contenedor.innerHTML = lista.map((item, i) => renderListItem(item, i)).join("");
+        contenedor.innerHTML = paginada.map((item, i) => renderListItem(item, i)).join("");
     }
 }
 
@@ -262,7 +323,8 @@ contenedor.innerHTML = claves.map(año => `
 }
 
 // ── Filtrar + ordenar + mostrar ───────────────────────────
-function aplicarOrden() {
+function aplicarOrden(resetPagina = false) {
+    if (resetPagina) catPaginaActual = 1;
     let lista = filtroEstado
         ? dataOriginal.filter(i => i.estado === filtroEstado)
         : [...dataOriginal];
@@ -314,13 +376,13 @@ function crearFiltros() {
         filtrosDiv.appendChild(btn);
     };
 
-    crearBtn("Todos", !filtroEstado, () => { filtroEstado = null; aplicarOrden(); });
+    crearBtn("Todos", !filtroEstado, () => { filtroEstado = null; aplicarOrden(true); });
 
     config.estados.forEach(estado => {
         const cnt = dataOriginal.filter(i => i.estado === estado).length;
         crearBtn(`${estado} (${cnt})`, false, () => {
             filtroEstado = estado;
-            aplicarOrden();
+            aplicarOrden(true);
         });
     });
 }

@@ -95,6 +95,28 @@ async function cargarItems() {
         aplicarOrden();
 
         setTimeout(() => {
+            const urlParams  = new URLSearchParams(window.location.search);
+            const buscarId   = parseInt(urlParams.get("buscarId"));
+
+            if (buscarId) {
+                // Buscar en qué página está y navegar a ella
+                const idx = dataOriginal.findIndex(i => i.id === buscarId);
+                if (idx !== -1) {
+                    catPaginaActual = Math.floor(idx / CAT_POR_PAGINA) + 1;
+                    aplicarOrden();
+                    setTimeout(() => {
+                        const card = document.getElementById(`card-${buscarId}`);
+                        if (card) {
+                            card.scrollIntoView({ behavior: "smooth", block: "center" });
+                            card.style.outline = `2px solid ${config.color}`;
+                            card.style.outlineOffset = "3px";
+                            setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 2000);
+                        }
+                    }, 150);
+                }
+                return;
+            }
+
             const hash = window.location.hash;
             if (hash) {
                 const card = document.querySelector(hash);
