@@ -59,7 +59,7 @@ const CONFIG = {
         usaPaginas:     false,
         usaTomos:       false,
         creadorLabel:   "Estudio",
-        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Ciencia Ficción", "Romance", "Terror", "Horror", "Misterio", "Slice of Life", "Deportes", "Mecha", "Isekai", "Shounen", "Shoujo", "Seinen", "Josei", "Ecchi", "Mahou Shoujo", "Sobrenatural", "Suspenso"],
+        generosOpciones: ["Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Ciencia Ficción", "Romance", "Terror", "Horror", "Misterio", "Slice of Life", "Deportes", "Mecha", "Isekai", "Shounen", "Shoujo", "Seinen", "Josei", "Ecchi", "Mahou Shoujo", "Sobrenatural", "Suspenso", "School"],
         plataformasOpciones: ["Crunchyroll", "Netflix", "Prime Video", "Disney+", "HBO Max", "Apple TV+", "Funimation", "HIDIVE", "Otro"]
     },
 
@@ -137,7 +137,7 @@ const CONFIG = {
         usaPaginas:     true,
         usaTomos:       false,
         creadorLabel:   "Autor",
-        generosOpciones: ["Novela", "Fantasía", "Ciencia Ficción", "Terror", "Horror", "Thriller", "Misterio", "Romance", "Historia", "Biografía", "Ensayo", "Autoayuda", "Poesía", "Infantil", "Young Adult", "Clásico", "Distopía","Light Novel","Comedia","Ficcion","Aventura"],
+        generosOpciones: ["Novela", "Fantasía", "Ciencia Ficción", "Terror", "Horror", "Thriller", "Misterio", "Romance", "Historia", "Biografía", "Ensayo", "Autoayuda", "Poesía", "Infantil", "Young Adult", "Clásico", "Distopía","Light Novel","Comedia","Ficcion","Aventura", "School"],
         plataformasOpciones: ["Físico", "Kindle", "Apple Books", "Google Play Books", "Audible", "Kobo", "Scribd", "Otro"]
     },
 

@@ -235,7 +235,7 @@ const API_ADAPTERS = {
     emoji: "📺",
     async buscar(query, signal) {
         const url = `/api/tmdb/tv?search=${encodeURIComponent(query)}`;
-const r   = await fetch(url, { signal });
+          const r   = await fetch(url, { signal });
             const d   = await r.json();
             const res = await Promise.all(
                 (d.results || []).slice(0, 8).map(s => _tmdbTVDetails(s, signal))
