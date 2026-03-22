@@ -522,6 +522,7 @@ app.get('/api/rawg', async (req, res) => {
         const query = req.query.search;
         if (!query) return res.json({ results: [] });
         const key = process.env.RAWG_KEY;
+         console.log('RAWG_KEY length:', key?.length);
         const url = `https://api.rawg.io/api/games?key=${key}&search=${encodeURIComponent(query)}&page_size=8&ordering=-rating`;
         const r   = await fetch(url);
         const d   = await r.json();
