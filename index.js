@@ -517,6 +517,53 @@ app.put('/progreso/:userId/:itemId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/rawg', async (req, res) => {
+    try {
+        const query = req.query.search;
+        if (!query) return res.json({ results: [] });
+        const key = process.env.RAWG_KEY;
+        const url = `https://api.rawg.io/api/games?key=${key}&search=${encodeURIComponent(query)}&page_size=8&ordering=-rating`;
+        const r   = await fetch(url);
+        const d   = await r.json();
+        res.json(d);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/tmdb/movie', async (req, res) => {
+    try {
+        const query = req.query.search;
+        if (!query) return res.json({ results: [] });
+        const key = process.env.TMDB_KEY;
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${encodeURIComponent(query)}&language=es-ES&page=1`;
+        const r   = await fetch(url);
+        const d   = await r.json();
+        res.json(d);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/tmdb/tv', async (req, res) => {
+    try {
+        const query = req.query.search;
+        if (!query) return res.json({ results: [] });
+        const key = process.env.TMDB_KEY;
+        const url = `https://api.themoviedb.org/3/search/tv?api_key=${key}&query=${encodeURIComponent(query)}&language=es-ES&page=1`;
+        const r   = await fetch(url);
+        const d   = await r.json();
+        res.json(d);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/tmdb/genres/:type', async (req, res) => {
+    try {
+        const key  = process.env.TMDB_KEY;
+        const type = req.params.type; // movie o tv
+        const url  = `https://api.themoviedb.org/3/genre/${type}/list?api_key=${key}&language=es-ES`;
+        const r    = await fetch(url);
+        const d    = await r.json();
+        res.json(d);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Arrancar servidor ─────────────────────────────────────
 initDB().then(() => {
     app.listen(PORT, () => {

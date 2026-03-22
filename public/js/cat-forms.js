@@ -87,11 +87,11 @@ form.setAttribute("autocomplete", "off");
     }
     if (config.usaEpisodios) {
         add(`<div style="grid-column:1/-1">
-    <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / Pelicula</label>
+    <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / Películas / ONAs</label>
     <div id="temporadas-container-inline"></div>
 <button type="button" onclick="agregarFilaTemporada('inline')"
         style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-        + Añadir temporada / OVA / Pelicula
+        + Añadir temporada / OVA / Películas / ONAs
     </button>
 </div>
 <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>
@@ -266,6 +266,8 @@ function activarEdicionEnModal(id) {
                 <option value="normal"  ${(t.tipo ?? "normal") === "normal"   ? "selected" : ""}>Temporada</option>
                 <option value="ova"     ${t.tipo === "ova"     ? "selected" : ""}>OVA</option>
                 <option value="especial"${t.tipo === "especial"? "selected" : ""}>Especial</option>
+                <option value="pelicula"${t.tipo === "pelicula"? "selected" : ""}>Película</option>
+                <option value="ona"${t.tipo === "ona"? "selected" : ""}>ONA</option>
             </select>
             <input type="number" id="temp-caps-${i}" value="${t.capitulos ?? ""}" placeholder="Nº caps" min="1" style="flex:1">
             <button type="button" onclick="eliminarFilaTemporada(${i})"
@@ -274,13 +276,15 @@ function activarEdicionEnModal(id) {
 
         extra += `
         <div style="grid-column:1/-1;margin-top:0.5rem">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Temporadas / OVAs / Especiales / Películas / ONAs</div>
             <div id="temporadas-container">${tempRows}</div>
             <button type="button" onclick="agregarFilaTemporada('edit')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir temporada / OVA
+                + Añadir temporada / OVA / Películas / ONAs
             </button>
-        </div>`;
+        </div>
+        <div class="number-wrap"><input type="number" id="input-temporada-actual-${id}" value="${item.progreso?.temporada ?? 1}" placeholder="Temporada actual (índice)" min="1"></div>
+        <div class="number-wrap"><input type="number" id="input-capitulo-actual-ep-${id}" value="${item.progreso?.capitulo ?? 0}" placeholder="Capítulo actual" min="0"></div>`;
     }
     if (config.usaTomos) {
     const tomos = Array.isArray(item.tomos) ? item.tomos : [];
@@ -547,7 +551,7 @@ if (metaEl) metaEl.innerHTML = `
     </div>
     ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `
     <div class="card-bloque">
-        <div class="card-bloque-label">Obra</div>
+        <div class="card-bloque-label">Estado de la serie</div>
         <span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>
     </div>` : ""}
     ${config.usalogros ? (() => {
@@ -626,7 +630,7 @@ function parchearCardEstado(id) {
     </div>
     ${item.estadoSerie && item.estadoSerie !== "null" && config.usaEstadoSerie ? `
     <div class="card-bloque">
-        <div class="card-bloque-label">Obra</div>
+        <div class="card-bloque-label">Estado de la serie</div>
         <span class="card-tag tag-estado-serie">${esc(item.estadoSerie)}</span>
     </div>` : ""}
     ${config.usalogros && item.logros ? `
@@ -813,7 +817,8 @@ function agregarFilaTemporada(modo) {
             <option value="normal">Temporada</option>
             <option value="ova">OVA</option>
             <option value="especial">Especial</option>
-            <option value="pelicula">Pelicula</option>
+            <option value="pelicula">Película</option>
+            <option value="ona">ONA</option>
         </select>
         <input type="number" id="temp-caps-${i}" placeholder="Nº caps" min="1" style="flex:1">
         <button type="button" onclick="eliminarFilaTemporada(${i})"
@@ -837,7 +842,7 @@ function leerTemporadasDelForm(modo) {
        ?? document.getElementById("temporadas-container-new");
     if (!container) return null;
 
-    const contadores = { normal: 0, ova: 0, especial: 0 , pelicula: 0};
+    const contadores = { normal: 0, ova: 0, especial: 0 , pelicula: 0, ona: 0};
     const temporadas = [];
 
     container.querySelectorAll("[id^='temp-caps-']").forEach(input => {

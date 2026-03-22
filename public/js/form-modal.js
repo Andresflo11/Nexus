@@ -165,11 +165,11 @@ function buildFormModalCampos(t) {
     // ── Campos específicos por tipo ────────────────────────────
     if (cfg.usaEpisodios) {
         add(`<div style="grid-column:1/-1">
-            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / pelicula</label>
+            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.4rem">Temporadas / OVAs / Especiales / Películas / ONAs</label>
             <div id="temporadas-container-new"></div>
             <button type="button" onclick="agregarFilaTemporada('new')"
                 style="margin-top:0.5rem;padding:0.4rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
-                + Añadir temporada / OVA / pelicula
+                + Añadir temporada / OVA / Películas / ONAs
             </button>
         </div>
         <div class="number-wrap"><input type="number" name="temporadaActual" placeholder="Temporada actual (índice)" min="1"></div>

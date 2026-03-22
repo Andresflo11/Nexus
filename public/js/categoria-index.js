@@ -119,10 +119,10 @@ function filtrarItems() {
         if (filtros.buscar && !it.titulo?.toLowerCase().includes(filtros.buscar)) return false;
         if (filtros.generos.size) {
             const g = it.generos ? (Array.isArray(it.generos) ? it.generos : (() => { try { return JSON.parse(it.generos); } catch { return []; } })()) : [];
-            if (![...filtros.generos].some(gen => g.includes(gen))) return false;
+            if (![...filtros.generos].every(gen => g.includes(gen))) return false;
         }
         if (filtros.plataformas.size) {
-            if (![...filtros.plataformas].some(pl => normalizarPlataformas(it.plataforma).includes(pl))) return false;
+            if (![...filtros.plataformas].every(pl => normalizarPlataformas(it.plataforma).includes(pl))) return false;
         }
         if (filtros.creador && !it.creador?.toLowerCase().includes(filtros.creador)) return false;
         if (filtros.estadoSerie && it.estadoSerie !== filtros.estadoSerie) return false;

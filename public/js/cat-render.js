@@ -67,6 +67,7 @@ function renderCard(item, idx) {
     return t?.tipo === "ova"      ? `OVA ${t.numero}`
          : t?.tipo === "especial" ? `ESP ${t.numero}`
          : t?.tipo === "pelicula" ? `PEL ${t.numero}`
+         : t?.tipo === "ona"      ? `ONA ${t.numero}`
          : `T${item.progreso.temporada}`;
 })()} (${pct}%)</div>
             <div class="progress-wrap" style="--pct:${pct}%"><div class="progress-fill" style="background:${color}"></div></div>
@@ -163,6 +164,7 @@ function renderListItem(item, idx) {
         const label = t?.tipo === "ova"      ? `OVA ${t.numero}`
                     : t?.tipo === "especial" ? `ESP ${t.numero}`
                     : t?.tipo === "pelicula" ? `PEL ${t.numero}`
+                    : t?.tipo === "ona"      ? `ONA ${t.numero}`
                     : `T${item.progreso.temporada}`;
         extra = `<span style="font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace"> · ${label} Ep ${item.progreso.capitulo} (${pct}%)</span>`;
     }

@@ -316,7 +316,7 @@ const pctGlobal = capMax > 0 ? Math.min(100, Math.round((capActual / capMax) * 1
             .then(rels => {
                 const html = rels.map(r => {
                     const cfg2 = CONFIG[r.tipo];
-                    return `<div onclick="abrirModalExpandido(${r.id})" style="display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color 0.2s,transform 0.15s;overflow:hidden"
+                    return `<div style="display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color 0.2s,transform 0.15s;overflow:hidden"
                         onmouseover="this.style.borderColor='${cfg2?.color ?? color}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
                         ${r.imagen
                             ? `<img src="${r.imagen}" style="width:100%;aspect-ratio:2/3;object-fit:cover;display:block">`
@@ -561,6 +561,7 @@ function meActualizarEpisodios(color = config.color) {
 const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
                  : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
                  : tempActual?.tipo === "pelicula" ? `PEL ${tempActual.numero}`
+                 : tempActual?.tipo === "ona"      ? `ONA ${tempActual.numero}`
                  : `T${item.progreso.temporada}`;
 document.getElementById("me-progreso-texto").textContent = `${labelTemp} · Ep ${item.progreso.capitulo} — ${pct}%`;
 
@@ -581,6 +582,7 @@ const tabsHTML = item.temporadas.map((t, i) => {
     const label = t.tipo === "ova"      ? `OVA ${t.numero}`
                 : t.tipo === "especial" ? `ESP ${t.numero}`
                 : t.tipo === "pelicula" ? `PEL ${t.numero}`
+                : t.tipo === "ona"      ? `ONA ${t.numero}`
                 : `T${t.numero}`;
     return `<button type="button" class="me-tab ${i === meTabActual ? "activo" : ""}"
         style="${i === meTabActual ? `background:${color};border-color:${color};color:#000` : ""}"
@@ -627,7 +629,8 @@ function meRenderTabContenido(color = config.color) {
                 <span style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px">TEMPORADA ${
     temp.tipo === "ova"      ? `OVA ${temp.numero}` :
     temp.tipo === "especial" ? `Especial ${temp.numero}` :
-    temp.tipo === "pelicula" ? `Pelicula ${temp.numero}` :
+    temp.tipo === "pelicula" ? `Película ${temp.numero}` :
+    temp.tipo === "ona"      ? `ONA ${temp.numero}` :
     `Temporada ${temp.numero}`
 }</span>
                 <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted)">${temp.capitulos} capítulos</span>
@@ -645,7 +648,7 @@ function meRenderTabContenido(color = config.color) {
                                  title="Ep ${n}">${n}</div>`;
                 }).join("")}
             </div>
-            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← ${temp.tipo === "ova" ? "OVA actual" : temp.tipo === "especial" ? "Especial actual" : temp.tipo === "pelicula" ? "Pelicula actual" : "Temporada actual"}</p>` : ""}
+            ${esCurrent ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;font-family:'JetBrains Mono',monospace">← ${temp.tipo === "ova" ? "OVA actual" : temp.tipo === "especial" ? "Especial actual" : temp.tipo === "pelicula" ? "Película actual" : temp.tipo === "ona" ? "ONA actual": "Temporada actual"}</p>` : ""}
         </div>`;
 }
 
@@ -765,6 +768,7 @@ function parchearProgresoEpisodio(id) {
 const labelTemp  = tempActual?.tipo === "ova"      ? `OVA ${tempActual.numero}`
                  : tempActual?.tipo === "especial" ? `ESP ${tempActual.numero}`
                  : tempActual?.tipo === "pelicula" ? `PEL ${tempActual.numero}`
+                 : tempActual?.tipo === "ona"      ? `ONA ${tempActual.numero}`
                  : `T${item.progreso.temporada}`;
 card.querySelector(".progress-info").textContent = `${labelTemp} (${pct}%)`;
     card.querySelector(".progress-wrap").style.setProperty("--pct", `${pct}%`);

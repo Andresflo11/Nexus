@@ -383,7 +383,7 @@ function buildSeccionEpisodios(color) {
 function buildEpisodiosInner(color, idx) {
   const temps = item.temporadas ?? [];
   const tabsHTML = temps.map((t, i) => {
-    const label = t.tipo==="ova"?`OVA ${t.numero}`:t.tipo==="especial"?`ESP ${t.numero}`:`T${t.numero}`;
+    const label = t.tipo==="ova"?`OVA ${t.numero}`:t.tipo==="especial"?`ESP ${t.numero}`:t.tipo==="pelicula"?`PEL ${t.numero}`:t.tipo==="ona"?`ONA ${t.numero}`:`T${t.numero}`;
     const a = i===idx;
     return `<button class="item-tab ${a?"activo":""}" style="${a?`background:${color};border-color:${color};color:#000`:""}" onclick="cambiarTabTemp(${i})">${label} <span style="font-size:0.54rem;opacity:0.7"></span></button>`;
   }).join("");
@@ -395,7 +395,7 @@ function buildEpisodiosInner(color, idx) {
   return `<div class="item-section-label">Temporadas</div>
     <div class="item-tabs">${tabsHTML}</div>
     ${temp?`<div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${color};margin-bottom:0.6rem">
-      ${temp.tipo==="ova"?`OVA ${temp.numero}`:temp.tipo==="especial"?`Especial ${temp.numero}`:`Temporada ${temp.numero}`}
+      ${temp.tipo==="ova"?`OVA ${temp.numero}`:temp.tipo==="especial"?`Especial ${temp.numero}`:temp.tipo==="pelicula"?`Película ${temp.numero}`:temp.tipo==="ona"?`ONA ${temp.numero}`:`Temporada ${temp.numero}`}
       <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;margin-left:0.4rem"></span>
     </div><div class="item-eps-grid">${dotsHTML}</div>`:""}`;
 }
