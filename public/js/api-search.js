@@ -169,16 +169,13 @@ const API_ADAPTERS = {
 
     // ── JUEGOS → RAWG ──────────────────────────────────────────
     juegos: {
-        color: "#7c5cfc",
-        emoji: "🎮",
-        async buscar(query, signal) {
-            if (!API_KEYS.rawg || API_KEYS.rawg === "TU_KEY_RAWG_AQUI") {
-                return _rawgFallback(query, signal);
-            }
-            const url = `/api/rawg?search=${encodeURIComponent(query)}`;
-            const r   = await fetch(url, { signal });
-            const d   = await r.json();
-            return (d.results || []).map(g => ({
+    color: "#7c5cfc",
+    emoji: "🎮",
+    async buscar(query, signal) {
+        const url = `/api/rawg?search=${encodeURIComponent(query)}`;
+        const r   = await fetch(url, { signal });
+        const d   = await r.json();
+        return (d.results || []).map(g => ({
                 titulo:   g.name,
                 imagen:   g.background_image || null,
                 anio:     g.released ? parseInt(g.released.split("-")[0]) : null,
@@ -219,13 +216,10 @@ const API_ADAPTERS = {
 
     // ── PELÍCULAS → TMDB ───────────────────────────────────────
     peliculas: {
-        color: "#ed1c24",
-        emoji: "🎬",
-        async buscar(query, signal) {
-            if (!API_KEYS.tmdb || API_KEYS.tmdb === "TU_KEY_TMDB_AQUI") {
-                return _tmdbFallback("movie", query, signal);
-            }
-            const url = `/api/tmdb/movie?search=${encodeURIComponent(query)}`;
+    color: "#ed1c24",
+    emoji: "🎬",
+    async buscar(query, signal) {
+        const url = `/api/tmdb/movie?search=${encodeURIComponent(query)}`;
             const r   = await fetch(url, { signal });
             const d   = await r.json();
             const res = await Promise.all(
@@ -237,13 +231,10 @@ const API_ADAPTERS = {
 
     // ── SERIES → TMDB ──────────────────────────────────────────
     series: {
-        color: "#00c030",
-        emoji: "📺",
-        async buscar(query, signal) {
-            if (!API_KEYS.tmdb || API_KEYS.tmdb === "TU_KEY_TMDB_AQUI") {
-                return _tmdbFallback("tv", query, signal);
-            }
-            const url = `/api/tmdb/tv?search=${encodeURIComponent(query)}`;
+    color: "#00c030",
+    emoji: "📺",
+    async buscar(query, signal) {
+        const url = `/api/tmdb/tv?search=${encodeURIComponent(query)}`;
 const r   = await fetch(url, { signal });
             const d   = await r.json();
             const res = await Promise.all(
