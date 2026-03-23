@@ -270,6 +270,107 @@
   border-color: var(--border);
 }
 
+/* ── Responsive topbar móvil ── */
+@media (max-width: 768px) {
+  .home-topbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    gap: 0.5rem;
+  }
+
+  /* Primera fila: logo + avatar alineados */
+  .home-topbar .logo {
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    flex: 1;
+    order: 1;
+  }
+
+  /* El menú de usuario va a la derecha en la primera fila */
+  #user-menu-wrap {
+    flex-shrink: 0;
+    order: 2;
+    margin-left: auto;
+  }
+
+  /* Las categorías van en la segunda fila ocupando todo el ancho */
+  .home-topbar-links {
+    order: 3;
+  }
+
+  /* Texto del botón → solo avatar circular */
+  #user-menu-wrap #btn-login-topbar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 0;         /* oculta el texto */
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  /* La inicial del usuario se muestra con ::after */
+  #user-menu-wrap #btn-login-topbar::after {
+    content: attr(data-inicial);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #000;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Cuando no hay sesión mostramos ícono de persona */
+  #user-menu-wrap #btn-login-topbar[data-inicial=""]::after,
+  #user-menu-wrap #btn-login-topbar:not([data-inicial])::after {
+    content: "→";
+    font-size: 0.75rem;
+  }
+
+  /* Las categorías ocupan toda la segunda fila */
+  .home-topbar-links {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .home-topbar-links a {
+    flex: 0 1 auto;
+    min-width: 70px;
+    max-width: calc(25% - 0.3rem);
+    font-size: 0.68rem;
+    padding: 0.3rem 0.4rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .home-topbar-links a:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+}
+
+/* Tablets medianas: 3 columnas para las categorías */
+@media (min-width: 480px) and (max-width: 768px) {
+  .home-topbar-links {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 /* ══════════════════════════════════════════
    ITEM PAGE — item.html
    ══════════════════════════════════════════ */
@@ -721,4 +822,34 @@ button.item-back {
 
 .home-item-info {
   padding: 0.5rem 0.6rem 0.6rem;
+}
+
+/* ── Carrusel responsivo ── */
+@media (max-width: 768px) {
+  .home-item-card {
+    width: 110px;
+  }
+
+  .home-item-poster {
+    width: 110px;
+    height: 158px;
+    font-size: 1.8rem;
+  }
+
+  .home-item-titulo {
+    font-size: 0.62rem;
+    width: 95px;
+    margin-top: 0.25rem;
+  }
+
+  .home-cat-titulo {
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    margin-bottom: 0.65rem;
+  }
+
+  .home-carrusel-track {
+    gap: 0.5rem;
+    padding: 0.25rem 0 0.5rem 0;
+  }
 }

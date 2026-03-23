@@ -4,6 +4,7 @@
     const btnHTML = `
     <div style="position:relative" id="user-menu-wrap">
         <button class="cta-btn" id="btn-login-topbar">Iniciar sesión</button>
+<button class="cta-btn auth-avatar-btn" id="btn-login-avatar" style="display:none;width:34px;height:34px;border-radius:50%;padding:0;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;flex-shrink:0"></button>
         <div id="user-dropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:170px;overflow:hidden;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
         <div id="user-dropdown-dashboard" style="display:none">
                 <a href="/dashboard.html" style="width:100%;padding:0.65rem 1rem;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:0.85rem;display:flex;align-items:center;gap:0.5rem;text-decoration:none;box-sizing:border-box" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">

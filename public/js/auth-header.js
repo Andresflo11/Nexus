@@ -22,20 +22,34 @@ function setSesion(user, recordar = false) {
 function actualizarBtnSesion() {
     const user     = getSesion();
     const btn      = document.getElementById("btn-login-topbar");
+    const btnAvatar = document.getElementById("btn-login-avatar");
     const dropdown = document.getElementById("user-dropdown");
     const adminRow = document.getElementById("user-dropdown-admin");
     const dashRow  = document.getElementById("user-dropdown-dashboard");
     if (!btn) return;
     if (user) {
         btn.textContent = user.username;
+        btn.setAttribute("data-inicial", user.username[0].toUpperCase());
         btn.onclick = (e) => toggleDropdown(e);
         if (adminRow) adminRow.style.display = user.rol === "admin" ? "block" : "none";
         if (dashRow)  dashRow.style.display  = "block";
+        // Avatar móvil
+        if (btnAvatar) {
+            btnAvatar.textContent = user.username[0].toUpperCase();
+            btnAvatar.style.display = "none"; // se muestra via CSS en móvil
+            btnAvatar.onclick = (e) => toggleDropdown(e);
+        }
     } else {
         btn.textContent = "Iniciar sesión";
+        btn.setAttribute("data-inicial", "");
         btn.onclick = abrirModalAuth;
         if (dropdown) dropdown.style.display = "none";
         if (dashRow)  dashRow.style.display  = "none";
+        if (btnAvatar) {
+            btnAvatar.textContent = "?";
+            btnAvatar.style.display = "none";
+            btnAvatar.onclick = abrirModalAuth;
+        }
     }
 }
 
