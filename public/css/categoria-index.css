@@ -666,4 +666,11 @@
     font-size: 1.5rem;
     letter-spacing: 2px;
   }
+
+  /* Evitar zoom automático en iOS al enfocar inputs */
+  .ci-search,
+  .ci-input,
+  .ci-select {
+    font-size: 16px;
+  }
 }
