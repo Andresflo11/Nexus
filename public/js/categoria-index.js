@@ -281,7 +281,14 @@ function renderizarGrid() {
 
 // ── Toggle sidebar móvil ──────────────────────────────────
 function toggleSidebarMovil() {
-    document.getElementById("ci-sidebar").classList.toggle("abierto");
+    const sidebar = document.getElementById("ci-sidebar");
+    const abierto = sidebar.classList.toggle("abierto");
+    document.body.style.overflow = abierto ? "hidden" : "";
+}
+
+function cerrarSidebarMovil() {
+    document.getElementById("ci-sidebar").classList.remove("abierto");
+    document.body.style.overflow = "";
 }
 
 // ── Cargar datos ──────────────────────────────────────────
