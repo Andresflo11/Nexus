@@ -18,7 +18,7 @@ Hay un apartado donde puedes ver más a fondo el progreso que tienes.
 
  <img width="1263" height="711" alt="image" src="https://github.com/user-attachments/assets/99c55685-849c-4765-8b45-ea274e52b575" />
 
-Ya hay cuenta para el admin que es el cual puede modificar o agregar los items 
+Para el admin que es el cual puede modificar o agregar los items 
 
 <img width="843" height="863" alt="image" src="https://github.com/user-attachments/assets/8af49d92-7e55-4532-a826-b8a47d508a2c" />
 <img width="733" height="864" alt="image" src="https://github.com/user-attachments/assets/4b5c4350-161d-4cc3-9058-7adc7b1bcb8f" />
