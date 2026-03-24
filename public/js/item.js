@@ -113,7 +113,7 @@ function renderColumnaIzquierda(color) {
     document.getElementById("item-poster").insertAdjacentElement("afterend", paginasEl);
   }
 
-  const generos = Array.isArray(item.generos) ? item.generos : [];
+  const generos = Array.isArray(item.generos) ? [...new Set(item.generos)] : [];
   const plats   = normalizarPlataformas(item.plataforma);
   const links   = Array.isArray(item.links) ? item.links : [];
 
