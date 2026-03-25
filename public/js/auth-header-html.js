@@ -99,7 +99,38 @@
             <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px">USUARIOS REGISTRADOS</div>
             <button onclick="cerrarModalUsuarios()" class="close-btn">✕</button>
           </div>
-          <div id="lista-usuarios" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+          <!-- Tabs admin -->
+          <div style="display:flex;gap:0.3rem;margin-bottom:1.25rem" id="admin-tabs">
+            <button onclick="adminTab('usuarios')" id="tab-btn-usuarios"
+              style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer">
+              👥 Usuarios
+            </button>
+            <button onclick="adminTab('sugerencias')" id="tab-btn-sugerencias"
+              style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;position:relative">
+              💡 Sugerencias
+              <span id="badge-sugerencias" style="display:none;position:absolute;top:-5px;right:-5px;background:#e91e63;color:#fff;font-size:0.55rem;font-family:'JetBrains Mono',monospace;border-radius:99px;padding:1px 5px;min-width:16px;text-align:center"></span>
+            </button>
+            <button onclick="adminTab('contacto')" id="tab-btn-contacto"
+              style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;position:relative">
+              ✉ Contacto
+              <span id="badge-contacto" style="display:none;position:absolute;top:-5px;right:-5px;background:#7c5cfc;color:#fff;font-size:0.55rem;font-family:'JetBrains Mono',monospace;border-radius:99px;padding:1px 5px;min-width:16px;text-align:center"></span>
+            </button>
+          </div>
+
+          <!-- Panel usuarios -->
+          <div id="panel-usuarios">
+            <div id="lista-usuarios" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+          </div>
+
+          <!-- Panel sugerencias -->
+          <div id="panel-sugerencias" style="display:none">
+            <div id="lista-sugerencias" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+          </div>
+
+          <!-- Panel contacto -->
+          <div id="panel-contacto" style="display:none">
+            <div id="lista-contacto" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+          </div>
         </div>
       </div>
     </div>

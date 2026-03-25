@@ -333,6 +333,112 @@ app.put('/admin/usuarios/:id/rol', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Sugerencias: crear ────────────────────────────────
+app.post('/sugerencias', async (req, res) => {
+    try {
+        await dbRun(`CREATE TABLE IF NOT EXISTS sugerencias (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo    TEXT NOT NULL,
+            categoria TEXT,
+            detalle   TEXT,
+            fecha     TEXT,
+            leida     INTEGER DEFAULT 0
+        )`);
+        const { titulo, categoria, detalle } = req.body;
+        const fecha = new Date().toISOString().split('T')[0];
+        const result = await dbRun(
+            `INSERT INTO sugerencias (titulo, categoria, detalle, fecha) VALUES (?, ?, ?, ?)`,
+            [titulo, categoria || null, detalle || null, fecha]
+        );
+        res.json({ id: Number(result.lastInsertRowid), ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Sugerencias: listar (solo admins) ─────────────────
+app.get('/sugerencias', async (req, res) => {
+    try {
+        await dbRun(`CREATE TABLE IF NOT EXISTS sugerencias (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo    TEXT NOT NULL,
+            categoria TEXT,
+            detalle   TEXT,
+            fecha     TEXT,
+            leida     INTEGER DEFAULT 0
+        )`);
+        const rows = await dbAll(`SELECT * FROM sugerencias ORDER BY id DESC`);
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Sugerencias: marcar como leída ────────────────────
+app.put('/sugerencias/:id/leida', async (req, res) => {
+    try {
+        await dbRun(`UPDATE sugerencias SET leida = 1 WHERE id = ?`, [req.params.id]);
+        res.json({ ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Sugerencias: eliminar ─────────────────────────────
+app.delete('/sugerencias/:id', async (req, res) => {
+    try {
+        await dbRun(`DELETE FROM sugerencias WHERE id = ?`, [req.params.id]);
+        res.json({ deleted: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Contacto: crear ───────────────────────────────────
+app.post('/contacto', async (req, res) => {
+    try {
+        await dbRun(`CREATE TABLE IF NOT EXISTS contacto (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre   TEXT NOT NULL,
+            email    TEXT NOT NULL,
+            mensaje  TEXT NOT NULL,
+            fecha    TEXT,
+            leido    INTEGER DEFAULT 0
+        )`);
+        const { nombre, email, mensaje } = req.body;
+        const fecha = new Date().toISOString().split('T')[0];
+        const result = await dbRun(
+            `INSERT INTO contacto (nombre, email, mensaje, fecha) VALUES (?, ?, ?, ?)`,
+            [nombre, email, mensaje, fecha]
+        );
+        res.json({ id: Number(result.lastInsertRowid), ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Contacto: listar (solo admins) ────────────────────
+app.get('/contacto', async (req, res) => {
+    try {
+        await dbRun(`CREATE TABLE IF NOT EXISTS contacto (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre   TEXT NOT NULL,
+            email    TEXT NOT NULL,
+            mensaje  TEXT NOT NULL,
+            fecha    TEXT,
+            leido    INTEGER DEFAULT 0
+        )`);
+        const rows = await dbAll(`SELECT * FROM contacto ORDER BY id DESC`);
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Contacto: marcar como leído ───────────────────────
+app.put('/contacto/:id/leido', async (req, res) => {
+    try {
+        await dbRun(`UPDATE contacto SET leido = 1 WHERE id = ?`, [req.params.id]);
+        res.json({ ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Contacto: eliminar ────────────────────────────────
+app.delete('/contacto/:id', async (req, res) => {
+    try {
+        await dbRun(`DELETE FROM contacto WHERE id = ?`, [req.params.id]);
+        res.json({ deleted: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── AUTH: Registro ────────────────────────────────────────
 app.post('/auth/register', async (req, res) => {
     try {

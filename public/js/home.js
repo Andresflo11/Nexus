@@ -238,36 +238,48 @@ function renderFondoBlur(imagenes) {
   requestAnimationFrame(animar);
 }
 
-function enviarFooterForm(e, tipo) {
+async function enviarFooterForm(e, tipo) {
   e.preventDefault();
   const form = e.target;
   const okEl = document.getElementById(`footer-ok-${tipo}`);
+  const btn  = form.querySelector("button[type='submit']");
+  btn.disabled = true;
 
-  let asunto, cuerpo, correo = "TU_CORREO@gmail.com"; // ← pon tu correo aquí
+  try {
+    let url, body;
 
-  if (tipo === "contacto") {
-    const nombre  = form.nombre.value.trim();
-    const email   = form.email.value.trim();
-    const mensaje = form.mensaje.value.trim();
-    asunto = `[NEXUS Contacto] Mensaje de ${nombre}`;
-    cuerpo = `Nombre: ${nombre}\nEmail: ${email}\n\nMensaje:\n${mensaje}`;
-  } else {
-    const titulo    = form.titulo.value.trim();
-    const categoria = form.categoria?.value.trim() || "Sin categoría";
-    const detalle   = form.detalle?.value.trim() || "";
-    asunto = `[NEXUS Sugerencia] ${titulo}`;
-    cuerpo = `Título sugerido: ${titulo}\nCategoría: ${categoria}\n\nDetalle:\n${detalle}`;
-  }
+    if (tipo === "contacto") {
+      url  = "/contacto";
+      body = {
+        nombre:  form.nombre.value.trim(),
+        email:   form.email.value.trim(),
+        mensaje: form.mensaje.value.trim()
+      };
+    } else {
+      url  = "/sugerencias";
+      body = {
+        titulo:    form.titulo.value.trim(),
+        categoria: form.categoria?.value.trim() || "",
+        detalle:   form.detalle?.value.trim()   || ""
+      };
+    }
 
-  // Abrir cliente de correo con los datos rellenados
-  window.location.href = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+    const res = await fetch(url, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body)
+    });
 
-  // Mostrar confirmación y limpiar el form
-  form.reset();
-  if (okEl) {
-    okEl.classList.add("visible");
-    setTimeout(() => okEl.classList.remove("visible"), 4000);
-  }
+    if (res.ok) {
+      form.reset();
+      if (okEl) {
+        okEl.classList.add("visible");
+        setTimeout(() => okEl.classList.remove("visible"), 4000);
+      }
+    }
+  } catch { }
+
+  btn.disabled = false;
 }
 
 document.addEventListener("DOMContentLoaded", cargarHome);

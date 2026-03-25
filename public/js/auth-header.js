@@ -162,7 +162,19 @@ function mostrarAuthError(msg) {
 async function abrirModalUsuarios() {
     document.getElementById("user-dropdown").style.display = "none";
     document.getElementById("modal-usuarios").classList.remove("oculto");
+    adminTab("usuarios");
     await cargarListaUsuarios();
+    try {
+        const [resSug, resCon] = await Promise.all([fetch("/sugerencias"), fetch("/contacto")]);
+        const sug = await resSug.json();
+        const con = await resCon.json();
+        const badgeSug = document.getElementById("badge-sugerencias");
+        const badgeCon = document.getElementById("badge-contacto");
+        const noLeidasSug = sug.filter(r => !r.leida).length;
+        const noLeidosCon = con.filter(r => !r.leido).length;
+        if (badgeSug) { badgeSug.textContent = noLeidasSug; badgeSug.style.display = noLeidasSug > 0 ? "inline-block" : "none"; }
+        if (badgeCon) { badgeCon.textContent = noLeidosCon; badgeCon.style.display = noLeidosCon > 0 ? "inline-block" : "none"; }
+    } catch {}
 }
 function cerrarModalUsuarios() {
     document.getElementById("modal-usuarios").classList.add("oculto");
@@ -430,4 +442,142 @@ async function ejecutarBorrarCuenta() {
         localStorage.removeItem("nexus_logout");
         window.location.href = "/";
     } catch { errorEl.textContent = "Error de conexión."; errorEl.style.display = "block"; }
+}
+
+function adminTab(tab) {
+    const paneles = { usuarios: "panel-usuarios", sugerencias: "panel-sugerencias", contacto: "panel-contacto" };
+    const botones = { usuarios: "tab-btn-usuarios", sugerencias: "tab-btn-sugerencias", contacto: "tab-btn-contacto" };
+
+    Object.keys(paneles).forEach(k => {
+        const panel = document.getElementById(paneles[k]);
+        const btn   = document.getElementById(botones[k]);
+        if (!panel || !btn) return;
+        const activo = k === tab;
+        panel.style.display     = activo ? "block" : "none";
+        btn.style.background    = activo ? "var(--accent)" : "transparent";
+        btn.style.borderColor   = activo ? "var(--accent)" : "var(--border)";
+        btn.style.color         = activo ? "#000" : "var(--muted)";
+        btn.style.fontWeight    = activo ? "600" : "";
+    });
+
+    if (tab === "sugerencias") cargarSugerencias();
+    if (tab === "contacto")    cargarContacto();
+}
+
+async function cargarSugerencias() {
+    const lista = document.getElementById("lista-sugerencias");
+    lista.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem">Cargando...</div>`;
+    try {
+        const res  = await fetch("/sugerencias");
+        const rows = await res.json();
+
+        // Actualizar badge con no leídas
+        const noLeidas = rows.filter(r => !r.leida).length;
+        const badge = document.getElementById("badge-sugerencias");
+        if (badge) {
+            badge.textContent    = noLeidas;
+            badge.style.display  = noLeidas > 0 ? "inline-block" : "none";
+        }
+
+        if (!rows.length) {
+            lista.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem;text-align:center">Sin sugerencias todavía.</div>`;
+            return;
+        }
+
+        lista.innerHTML = "";
+        rows.forEach(s => {
+            const div = document.createElement("div");
+            div.style.cssText = `background:var(--surface2);border:1px solid ${s.leida ? "var(--border)" : "rgba(232,255,71,0.25)"};border-radius:10px;padding:0.85rem 1rem;display:flex;flex-direction:column;gap:0.4rem`;
+
+            div.innerHTML = `
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem">
+                <div style="flex:1">
+                  ${!s.leida ? `<span style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.2rem;display:block">● Nueva</span>` : ""}
+                  <div style="font-size:0.88rem;font-weight:600;color:var(--text)">${esc2(s.titulo)}</div>
+                  ${s.categoria ? `<div style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);margin-top:0.15rem">${esc2(s.categoria)}</div>` : ""}
+                </div>
+                <div style="display:flex;gap:0.35rem;flex-shrink:0">
+                  ${!s.leida ? `<button onclick="marcarSugerenciaLeida(${s.id},this)" style="padding:0.25rem 0.55rem;background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.25);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.68rem;font-family:'DM Sans',sans-serif" onmouseover="this.style.background='rgba(232,255,71,0.15)'" onmouseout="this.style.background='rgba(232,255,71,0.08)'">✓ Leída</button>` : ""}
+                  <button onclick="eliminarSugerencia(${s.id},this)" style="padding:0.25rem 0.55rem;background:#ef444415;border:1px solid #ef444430;color:#ef4444;border-radius:6px;cursor:pointer;font-size:0.68rem;font-family:'DM Sans',sans-serif" onmouseover="this.style.background='#ef444425'" onmouseout="this.style.background='#ef444415'">✕</button>
+                </div>
+              </div>
+              ${s.detalle ? `<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;padding-top:0.35rem;border-top:1px solid var(--border)">${esc2(s.detalle)}</div>` : ""}
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--muted);opacity:0.6">${s.fecha || ""}</div>`;
+
+            lista.appendChild(div);
+        });
+    } catch {
+        lista.innerHTML = `<div style="color:#ef4444;font-size:0.85rem">Error al cargar sugerencias.</div>`;
+    }
+}
+
+function esc2(str) {
+    return String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+async function marcarSugerenciaLeida(id, btn) {
+    btn.disabled = true;
+    await fetch(`/sugerencias/${id}/leida`, { method: "PUT" });
+    cargarSugerencias();
+}
+
+async function eliminarSugerencia(id, btn) {
+    btn.disabled = true;
+    await fetch(`/sugerencias/${id}`, { method: "DELETE" });
+    cargarSugerencias();
+}
+
+async function cargarContacto() {
+    const lista = document.getElementById("lista-contacto");
+    lista.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem">Cargando...</div>`;
+    try {
+        const res  = await fetch("/contacto");
+        const rows = await res.json();
+
+        const noLeidos = rows.filter(r => !r.leido).length;
+        const badge = document.getElementById("badge-contacto");
+        if (badge) { badge.textContent = noLeidos; badge.style.display = noLeidos > 0 ? "inline-block" : "none"; }
+
+        if (!rows.length) {
+            lista.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem;text-align:center">Sin mensajes todavía.</div>`;
+            return;
+        }
+
+        lista.innerHTML = "";
+        rows.forEach(s => {
+            const div = document.createElement("div");
+            div.style.cssText = `background:var(--surface2);border:1px solid ${s.leido ? "var(--border)" : "rgba(124,92,252,0.35)"};border-radius:10px;padding:0.85rem 1rem;display:flex;flex-direction:column;gap:0.4rem`;
+
+            div.innerHTML = `
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem">
+                <div style="flex:1">
+                  ${!s.leido ? `<span style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:#7c5cfc;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.2rem;display:block">● Nuevo</span>` : ""}
+                  <div style="font-size:0.88rem;font-weight:600;color:var(--text)">${esc2(s.nombre)}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#7c5cfc;margin-top:0.1rem">${esc2(s.email)}</div>
+                </div>
+                <div style="display:flex;gap:0.35rem;flex-shrink:0">
+                  ${!s.leido ? `<button onclick="marcarContactoLeido(${s.id},this)" style="padding:0.25rem 0.55rem;background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.25);color:#7c5cfc;border-radius:6px;cursor:pointer;font-size:0.68rem;font-family:'DM Sans',sans-serif">✓ Leído</button>` : ""}
+                  <button onclick="eliminarContacto(${s.id},this)" style="padding:0.25rem 0.55rem;background:#ef444415;border:1px solid #ef444430;color:#ef4444;border-radius:6px;cursor:pointer;font-size:0.68rem;font-family:'DM Sans',sans-serif">✕</button>
+                </div>
+              </div>
+              <div style="font-size:0.82rem;color:var(--muted);line-height:1.55;padding-top:0.35rem;border-top:1px solid var(--border)">${esc2(s.mensaje)}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--muted);opacity:0.6">${s.fecha || ""}</div>`;
+
+            lista.appendChild(div);
+        });
+    } catch {
+        lista.innerHTML = `<div style="color:#ef4444;font-size:0.85rem">Error al cargar mensajes.</div>`;
+    }
+}
+
+async function marcarContactoLeido(id, btn) {
+    btn.disabled = true;
+    await fetch(`/contacto/${id}/leido`, { method: "PUT" });
+    cargarContacto();
+}
+
+async function eliminarContacto(id, btn) {
+    btn.disabled = true;
+    await fetch(`/contacto/${id}`, { method: "DELETE" });
+    cargarContacto();
 }
