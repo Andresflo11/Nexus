@@ -853,3 +853,169 @@ button.item-back {
     padding: 0.25rem 0 0.5rem 0;
   }
 }
+
+/* ═══════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════ */
+
+.nexus-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 3rem 0 0;
+  margin-top: 2rem;
+}
+
+.nexus-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 2.5rem;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 3rem;
+}
+
+/* ── Columna marca ── */
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.footer-logo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2.2rem;
+  letter-spacing: 5px;
+  background: linear-gradient(135deg, var(--accent) 0%, #fff 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+.footer-logo span { -webkit-text-fill-color: var(--accent); }
+
+.footer-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 260px;
+}
+
+.footer-accent-line {
+  width: 40px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 99px;
+  margin-top: 0.25rem;
+}
+
+/* ── Columnas formulario ── */
+.footer-col-titulo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.footer-col-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 0.85rem;
+}
+
+/* ── Formularios del footer ── */
+.footer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer-form input,
+.footer-form textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  outline: none;
+  resize: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.footer-form input:focus,
+.footer-form textarea:focus {
+  border-color: var(--accent);
+}
+
+.footer-form input::placeholder,
+.footer-form textarea::placeholder {
+  color: var(--muted);
+}
+
+.footer-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  align-self: flex-start;
+}
+
+.footer-form button:hover { opacity: 0.85; }
+
+.footer-form-ok {
+  display: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #22c55e;
+  padding: 0.4rem 0;
+}
+
+.footer-form-ok.visible { display: block; }
+
+/* ── Bottom bar ── */
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* ── Responsive footer ── */
+@media (max-width: 860px) {
+  .nexus-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1.25rem 2rem;
+  }
+
+  .footer-desc { max-width: 100%; }
+
+  .footer-bottom {
+    flex-wrap: wrap;
+    text-align: center;
+    padding: 1rem;
+  }
+}
