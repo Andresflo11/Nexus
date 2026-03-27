@@ -68,7 +68,7 @@ function renderItem() {
       sessionStorage.setItem("nexus_item_origen", decodeURIComponent(origenParam));
   } else {
       // Fallback: usar referrer
-      const referrer = document.referrer;
+  const referrer = document.referrer;
       if (referrer.includes("categoria.html") || referrer.includes("categoria-index.html") || referrer.includes("dashboard.html")) {
           sessionStorage.setItem("nexus_item_origen", referrer);
       } else if (!referrer.includes("item.html")) {
