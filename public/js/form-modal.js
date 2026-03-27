@@ -146,6 +146,14 @@ function buildFormModalCampos(t) {
             <div id="generos-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem">${chips}</div>
         </div>`);
     }
+    add(`<div style="grid-column:1/-1">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Títulos alternativos</div>
+        <div id="titulos-alt-container-new" style="display:flex;flex-direction:column;gap:0.35rem"></div>
+        <button type="button" onclick="agregarTituloAlt('new')"
+            style="margin-top:0.4rem;padding:0.35rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir título alternativo
+        </button>
+    </div>`);
 
     // Saga y orden
     add(`<input type="text" name="saga" placeholder="Saga / Franquicia (opcional)">`);
@@ -353,7 +361,8 @@ async function guardarFormModal(e, t) {
         saga:             form.saga?.value.trim() || null,
         ordenPublicacion: parseInt(form.ordenPublicacion?.value) || null,
         ordenCronologico: parseInt(form.ordenCronologico?.value) || null,
-        links:      leerLinksFmm()
+        links:       leerLinksFmm(),
+        titulos_alt: leerTitulosAlt('new')
     };
 
     if (cfg.usalogros)       nuevo.logros      = form.logros?.value ?? "No tiene logros";

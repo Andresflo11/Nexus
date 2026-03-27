@@ -67,7 +67,8 @@ async function initDB() {
         creador          TEXT,
         anio             INTEGER,
         duracion         TEXT,
-        links            TEXT
+        links            TEXT,
+        titulos_alt      TEXT
     )`);
 
     for (const sql of [
@@ -80,6 +81,7 @@ async function initDB() {
         `ALTER TABLE items ADD COLUMN anio             INTEGER`,
         `ALTER TABLE items ADD COLUMN duracion         TEXT`,
         `ALTER TABLE items ADD COLUMN links            TEXT`,
+        `ALTER TABLE items ADD COLUMN titulos_alt      TEXT`,
     ]) { try { await dbRun(sql); } catch (_) {} }
 
     await dbRun(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -158,6 +160,7 @@ function parsearFila(row) {
         generos:       parseJSON(row.generos),
         links:         parseJSON(row.links),
         plataforma:    parseJSON(row.plataforma),
+        titulos_alt:   parseJSON(row.titulos_alt),
     };
 }
 
@@ -186,7 +189,10 @@ app.get('/items', async (req, res) => {
     try {
         const search = req.query.search?.trim();
         const rows = search
-            ? await dbAll(`SELECT * FROM items WHERE titulo LIKE ? ORDER BY id DESC`, [`%${search}%`])
+            ? await dbAll(
+                `SELECT * FROM items WHERE titulo LIKE ? OR titulos_alt LIKE ? ORDER BY id DESC`,
+                [`%${search}%`, `%${search}%`]
+              )
             : await dbAll(`SELECT * FROM items ORDER BY id DESC`);
         res.json(rows.map(parsearFila));
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -223,15 +229,15 @@ app.post('/items', async (req, res) => {
             paginasTotales,   paginaActual,
             valoracion, dlcs, tomos, progresoManga,
             saga, ordenPublicacion, ordenCronologico,
-            generos, creador, anio, duracion, links
+            generos, creador, anio, duracion, links, titulos_alt
         } = req.body;
 
         const sql = `INSERT INTO items
             (tipo, titulo, estado, fecha, imagen, plataforma, logros, temporadas, progreso,
              estadoSerie, capitulosTotales, capituloActual, paginasTotales, paginaActual,
              valoracion, dlcs, tomos, progresoManga,
-             saga, ordenPublicacion, ordenCronologico, generos, creador, anio, duracion, links)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+             saga, ordenPublicacion, ordenCronologico, generos, creador, anio, duracion, links, titulos_alt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const result = await dbRun(sql, [
             tipo, titulo, estado, fecha,
@@ -256,7 +262,8 @@ app.post('/items', async (req, res) => {
             creador  ?? null,
             anio     ?? null,
             duracion ?? null,
-            JSON.stringify(links ?? null)
+            JSON.stringify(links ?? null),
+            JSON.stringify(titulos_alt ?? null)
         ]);
         res.json({ id: Number(result.lastInsertRowid), message: 'Item añadido ✓' });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -277,6 +284,7 @@ app.put('/items/:id', async (req, res) => {
         if (item.generos       !== undefined) item.generos       = JSON.stringify(item.generos);
         if (item.links         !== undefined) item.links         = JSON.stringify(item.links);
         if (item.plataforma    !== undefined) item.plataforma    = JSON.stringify(item.plataforma);
+        if (item.titulos_alt   !== undefined) item.titulos_alt   = JSON.stringify(item.titulos_alt);
         delete item.id;
 
         const columnas = Object.keys(item);

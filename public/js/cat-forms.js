@@ -66,6 +66,14 @@ form.setAttribute("autocomplete", "off");
     }
 
     // Saga
+    add(`<div style="grid-column:1/-1">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Títulos alternativos</div>
+        <div id="titulos-alt-container-inline" style="display:flex;flex-direction:column;gap:0.35rem"></div>
+        <button type="button" onclick="agregarTituloAlt('inline')"
+            style="margin-top:0.4rem;padding:0.35rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir título alternativo
+        </button>
+    </div>`);
     add(`<input type="text" name="saga" placeholder="Saga / Franquicia (opcional)">`);
     add(`<input type="number" name="ordenPublicacion" placeholder="Nº en orden de publicación" min="1">`);
     add(`<input type="number" name="ordenCronologico" placeholder="Nº en orden cronológico" min="1">`);
@@ -147,7 +155,8 @@ function agregarItem(e) {
         saga:             form.saga?.value.trim() || null,
         ordenPublicacion: parseInt(form.ordenPublicacion?.value) || null,
         ordenCronologico: parseInt(form.ordenCronologico?.value) || null,
-        links:      leerLinksDelForm('inline')
+        links:       leerLinksDelForm('inline'),
+        titulos_alt: leerTitulosAlt('inline')
     };
 
     if (config.usaPlataforma) nuevo.plataforma = form.plataforma?.value.trim() || null;
@@ -378,6 +387,27 @@ function activarEdicionEnModal(id) {
         </div>`;
     }
 
+     // Títulos alternativos para edición
+    const titulosAltActuales = Array.isArray(item.titulos_alt) ? item.titulos_alt : [];
+    tituloAltContador = titulosAltActuales.length;
+    const titulosAltRows = titulosAltActuales.map((t, i) => `
+        <div id="titulo-alt-row-${i}" style="display:flex;gap:0.5rem;align-items:center">
+            <input type="text" id="titulo-alt-val-${i}" value="${esc(t)}"
+                placeholder="Título alternativo"
+                style="flex:1">
+            <button type="button" onclick="document.getElementById('titulo-alt-row-${i}').remove()"
+                style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>
+        </div>`).join("");
+
+    const titulosAltEditHTML = `<div style="grid-column:1/-1;margin-top:0.5rem">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Títulos alternativos</div>
+        <div id="titulos-alt-container-edit" style="display:flex;flex-direction:column;gap:0.35rem">${titulosAltRows}</div>
+        <button type="button" onclick="agregarTituloAlt('edit')"
+            style="margin-top:0.4rem;padding:0.35rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir título alternativo
+        </button>
+    </div>`;
+
     // ── Links para edición ───────────────────────────────────
     const linksActuales = Array.isArray(item.links) ? item.links : [];
     linkContador = linksActuales.length;
@@ -404,6 +434,7 @@ function activarEdicionEnModal(id) {
         <input type="text" id="input-saga-${id}" value="${esc(item.saga ?? "")}" placeholder="Saga / Franquicia">
         <input type="number" id="input-orden-pub-${id}" value="${item.ordenPublicacion ?? ""}" placeholder="Nº orden publicación" min="1">
         <input type="number" id="input-orden-cron-${id}" value="${item.ordenCronologico ?? ""}" placeholder="Nº orden cronológico" min="1">
+        ${titulosAltEditHTML}
         ${linksEditHTML}
         ${extra}
         <div style="display:flex;gap:0.75rem;margin-top:0.5rem;grid-column:1/-1">
@@ -441,7 +472,8 @@ function guardarEdicionCompleta(id) {
         saga:             document.getElementById(`input-saga-${id}`)?.value.trim() || null,
         ordenPublicacion: parseInt(document.getElementById(`input-orden-pub-${id}`)?.value) || null,
         ordenCronologico: parseInt(document.getElementById(`input-orden-cron-${id}`)?.value) || null,
-        links:      leerLinksDelForm('edit')
+        links:       leerLinksDelForm('edit'),
+        titulos_alt: leerTitulosAlt('edit')
     };
 
     if (config.usaPlataforma) {
@@ -1240,4 +1272,38 @@ async function guardarEdicionUsuario(itemId, userId) {
     parchearCard(itemId); // ← actualizar la card con el nuevo valor antes de volver
     meDatosUsuario = null;
     meVolverDesdeEdicion(itemId);
+}
+
+// ── Títulos alternativos ──────────────────────────────
+let tituloAltContador = 0;
+
+function agregarTituloAlt(modo) {
+    const containerId = modo === "edit"   ? "titulos-alt-container-edit"
+                      : modo === "inline" ? "titulos-alt-container-inline"
+                      :                    "titulos-alt-container-new";
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const i = tituloAltContador++;
+    const div = document.createElement("div");
+    div.id = `titulo-alt-row-${i}`;
+    div.style.cssText = "display:flex;gap:0.5rem;align-items:center";
+    div.innerHTML = `
+        <input type="text" id="titulo-alt-val-${i}"
+            placeholder="Título alternativo (ej: título en japonés, inglés...)"
+            style="flex:1">
+        <button type="button" onclick="document.getElementById('titulo-alt-row-${i}').remove()"
+            style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>`;
+    container.appendChild(div);
+}
+
+function leerTitulosAlt(modo) {
+    const containerId = modo === "edit"   ? "titulos-alt-container-edit"
+                      : modo === "inline" ? "titulos-alt-container-inline"
+                      :                    "titulos-alt-container-new";
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+    const titulos = [...container.querySelectorAll("[id^='titulo-alt-val-']")]
+        .map(el => el.value.trim())
+        .filter(Boolean);
+    return titulos.length ? titulos : null;
 }
