@@ -1049,11 +1049,22 @@ function leerPlataformasChips(id) {
 // ── Géneros: chips seleccionables ─────────────────────────
 
 function toggleGeneroChip(el) {
-    const color = config?.color ?? "#7c5cfc";
+    // Funciona tanto en cat-forms (tiene config global) como en form-modal (usa data-genero del chip)
+    const tipoActivo = (typeof formModalTipoActual !== "undefined" && formModalTipoActual)
+        ? formModalTipoActual
+        : (typeof tipo !== "undefined" ? tipo : null);
+    const color  = (tipoActivo ? CONFIG[tipoActivo]?.color : null) ?? config?.color ?? "#7c5cfc";
     const activo = el.classList.toggle("seleccionado");
-    el.style.background   = activo ? color + "25" : "transparent";
-    el.style.borderColor  = activo ? color : "var(--border2)";
-    el.style.color        = activo ? color : "var(--muted)";
+    el.style.background  = activo ? color + "20" : "transparent";
+    el.style.borderColor = activo ? color : "var(--border2)";
+    el.style.color       = activo ? color : "var(--muted)";
+    el.style.fontWeight  = activo ? "600" : "";
+    el.style.boxShadow   = activo ? `0 0 0 1px ${color}40` : "";
+    if (activo) {
+        el.setAttribute("data-seleccionado", "true");
+    } else {
+        el.removeAttribute("data-seleccionado");
+    }
 }
 
 function leerGenerosSeleccionados() {

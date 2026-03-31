@@ -636,10 +636,80 @@ app.get('/api/rawg', async (req, res) => {
         const query = req.query.search;
         if (!query) return res.json({ results: [] });
         const key = process.env.RAWG_KEY;
-        const url = `https://api.rawg.io/api/games?key=${key}&search=${encodeURIComponent(query)}&page_size=8&ordering=-rating`;
+        // search_exact=true prioriza coincidencias exactas de nombre
+        // sin ordering para usar la relevancia nativa de RAWG
+        const url = `https://api.rawg.io/api/games?key=${key}&search=${encodeURIComponent(query)}&page_size=10&search_exact=false&search_precise=true`;
         const r   = await fetch(url);
         const d   = await r.json();
+
+        // Enriquecer cada resultado con póster vertical de Steam si tiene store Steam
+        if (d.results) {
+            for (const game of d.results) {
+                // Intentar obtener el AppID de Steam desde las stores del juego
+                // RAWG devuelve stores en el listado general, buscar si tiene Steam (id=1)
+                const steamStore = (game.stores || []).find(s => s.store?.id === 1 || s.store?.slug === 'steam');
+                if (steamStore) {
+                    // La URL de Steam store tiene el AppID: store.steampowered.com/app/APPID
+                    const storeUrl = steamStore.url || '';
+                    const match = storeUrl.match(/\/app\/(\d+)/);
+                    if (match) {
+                        const appId = match[1];
+                        // Póster vertical oficial de Steam (600x900)
+                        game._steam_poster = `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900_2x.jpg`;
+                        game._steam_appid  = appId;
+                    }
+                }
+            }
+        }
+
         res.json(d);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/rawg/detail/:id', async (req, res) => {
+    try {
+        const key    = process.env.RAWG_KEY;
+        const gameId = req.params.id;
+
+        // Pedir detalle del juego Y sus stores en paralelo
+        const [rGame, rStores] = await Promise.all([
+            fetch(`https://api.rawg.io/api/games/${gameId}?key=${key}`),
+            fetch(`https://api.rawg.io/api/games/${gameId}/stores?key=${key}`)
+        ]);
+
+        const d      = await rGame.json();
+        const stores = await rStores.json();
+
+        // Buscar la URL de Steam en el endpoint de stores (que sí devuelve URLs completas)
+        let steamPoster = null;
+        let steamAppId  = null;
+
+        if (stores.results) {
+            const steamEntry = stores.results.find(s => s.store_id === 1);
+            if (steamEntry?.url) {
+                const match = steamEntry.url.match(/\/app\/(\d+)/);
+                if (match) {
+                    steamAppId = match[1];
+                    // Intentar primero library_600x900_2x (la mejor calidad vertical)
+                    // Si no existe, probar library_600x900
+                    const poster2x = `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/library_600x900_2x.jpg`;
+                    const poster1x = `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/library_600x900.jpg`;
+
+                    // Verificar que existe desde el backend (sin problemas de CORS)
+                    try {
+                        const test = await fetch(poster2x, { method: 'HEAD' });
+                        steamPoster = test.ok ? poster2x : poster1x;
+                    } catch {
+                        steamPoster = poster1x; // fallback directo sin verificar
+                    }
+                }
+            }
+        }
+
+        // Si no hay Steam, buscar también en otras tiendas que puedan tener AppID
+        // (GOG, Epic, etc. no tienen pósters verticales estándar, así que solo Steam)
+
+        res.json({ ...d, _steam_poster: steamPoster, _steam_appid: steamAppId });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

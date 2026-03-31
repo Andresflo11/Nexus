@@ -169,23 +169,24 @@ const API_ADAPTERS = {
 
     // ── JUEGOS → RAWG ──────────────────────────────────────────
     juegos: {
-    color: "#7c5cfc",
-    emoji: "🎮",
-    async buscar(query, signal) {
-        const url = `/api/rawg?search=${encodeURIComponent(query)}`;
-        const r   = await fetch(url, { signal });
-        const d   = await r.json();
-        return (d.results || []).map(g => ({
-                titulo:   g.name,
-                imagen:   g.background_image || null,
-                anio:     g.released ? parseInt(g.released.split("-")[0]) : null,
-                creador:  g.developers?.[0]?.name || null,
-                generos:  (g.genres || []).map(x => x.name),
+        color: "#7c5cfc",
+        emoji: "🎮",
+        async buscar(query, signal) {
+            const url = `/api/rawg?search=${encodeURIComponent(query)}`;
+            const r   = await fetch(url, { signal });
+            const d   = await r.json();
+            return (d.results || []).map(g => ({
+                titulo:      g.name,
+                imagen:      g.background_image || null,
+                anio:        g.released ? parseInt(g.released.split("-")[0]) : null,
+                creador:     g.developers?.[0]?.name || null,
+                generos:     (g.genres || []).map(x => x.name),
                 plataformas: (g.platforms || []).map(p => _mapPlatformRawg(p.platform.name)),
-                duracion: null,
-                meta:     `${g.released?.split("-")[0] || "—"} · ⭐ ${g.rating?.toFixed(1) || "—"}`,
-                badge:    g.released?.split("-")[0] || null,
-                rawData:  g
+                duracion:    null,
+                meta:        `${g.released?.split("-")[0] || "—"} · ⭐ ${g.rating?.toFixed(1) || "—"}`,
+                badge:       g.released?.split("-")[0] || null,
+                _rawgId:     g.id,
+                rawData:     g
             }));
         }
     },
@@ -648,9 +649,26 @@ function apiSearchAttach(inputEl, tipo, formId, fillFn) {
                     ${badgeHTML}
                 `;
 
-                item.addEventListener("click", () => {
+                item.addEventListener("click", async () => {
                     inputEl.value = r.titulo;
                     cerrarDropdown();
+
+                    // Para juegos: obtener póster vertical de Steam desde el backend
+                    if (tipo === "juegos" && r._rawgId) {
+                        try {
+                            const dr = await fetch(`/api/rawg/detail/${r._rawgId}`);
+                            const dd = await dr.json();
+                            // El backend ya verificó que la imagen existe
+                            if (dd._steam_poster) {
+                                r.imagen = dd._steam_poster;
+                            }
+                            // Actualizar creador si el detalle lo tiene y el listado no
+                            if (!r.creador && dd.developers?.[0]?.name) {
+                                r.creador = dd.developers[0].name;
+                            }
+                        } catch (_) { /* mantener imagen landscape si falla */ }
+                    }
+
                     fillFn(r);
                 });
                 item.addEventListener("mouseenter", () => {
@@ -734,50 +752,30 @@ function _fillCamposComunes(data, formId, tipo) {
 
     if (!form) return;
 
+    // Helper: busca input por name dentro del form, incluyendo dentro de .num-wrap
+    function getInput(name) {
+        return form.querySelector(`[name="${name}"]`);
+    }
+
     // Imagen
-    const imgInput = form.querySelector('[name="imagen"]');
+    const imgInput = getInput("imagen");
     if (imgInput && data.imagen) imgInput.value = data.imagen;
 
     // Año
-    const anioInput = form.querySelector('[name="anio"]');
+    const anioInput = getInput("anio");
     if (anioInput && data.anio) anioInput.value = data.anio;
 
     // Creador
-    const creadorInput = form.querySelector('[name="creador"]');
+    const creadorInput = getInput("creador");
     if (creadorInput && data.creador) creadorInput.value = data.creador;
 
     // Duración
-    const durInput = form.querySelector('[name="duracion"]');
+    const durInput = getInput("duracion");
     if (durInput && data.duracion) durInput.value = data.duracion;
-
-    // Géneros: seleccionar chips que coincidan
-    if (data.generos?.length) {
-        const chipsContainer = document.getElementById("generos-chips");
-        if (chipsContainer) {
-            chipsContainer.querySelectorAll(".genero-chip").forEach(chip => {
-                const genero = chip.getAttribute("data-genero");
-                const selec  = data.generos.includes(genero);
-                if (selec) {
-                    chip.style.background   = CONFIG[tipo]?.color || "#e8ff47";
-                    chip.style.color        = "#000";
-                    chip.style.borderColor  = CONFIG[tipo]?.color || "#e8ff47";
-                    chip.setAttribute("data-seleccionado", "true");
-                } else {
-                    chip.style.background   = "transparent";
-                    chip.style.color        = "var(--muted)";
-                    chip.style.borderColor  = "var(--border2)";
-                    chip.removeAttribute("data-seleccionado");
-                }
-            });
-            // Actualizar hidden input si existe
-            const hidden = form.querySelector('[name="generos"]');
-            if (hidden) hidden.value = data.generos.join(",");
-        }
-    }
 
     // Estado de serie
     if (data.estadoSerie) {
-        const selEst = form.querySelector('[name="estadoSerie"]');
+        const selEst = getInput("estadoSerie");
         if (selEst) {
             for (const opt of selEst.options) {
                 if (opt.value === data.estadoSerie) { selEst.value = data.estadoSerie; break; }
@@ -787,32 +785,112 @@ function _fillCamposComunes(data, formId, tipo) {
 
     // Páginas totales (libros)
     if (data.paginasTotales) {
-        const pagInput = form.querySelector('[name="paginasTotales"]');
+        const pagInput = getInput("paginasTotales");
         if (pagInput) pagInput.value = data.paginasTotales;
+    }
+
+    // Capítulos totales (cómics/mangas vía Open Library pueden no tenerlo)
+    if (data.capitulosTotales) {
+        const capInput = getInput("capitulosTotales");
+        if (capInput) capInput.value = data.capitulosTotales;
+    }
+
+    // Géneros: seleccionar chips que coincidan
+    if (data.generos?.length) {
+        setTimeout(() => {
+            // Buscar el contenedor de chips — puede estar en el form-modal o en el form inline
+            const chipsContainer = document.getElementById("generos-chips");
+            if (!chipsContainer) return;
+            const color = CONFIG[tipo]?.color || "#e8ff47";
+
+            // Primero deseleccionar todos
+            chipsContainer.querySelectorAll(".genero-chip").forEach(chip => {
+                chip.classList.remove("seleccionado");
+                chip.style.background  = "transparent";
+                chip.style.color       = "var(--muted)";
+                chip.style.borderColor = "var(--border2)";
+                chip.removeAttribute("data-seleccionado");
+            });
+
+            // Luego seleccionar los que coincidan
+            chipsContainer.querySelectorAll(".genero-chip").forEach(chip => {
+                const genero = chip.getAttribute("data-genero") || "";
+                const selec  = data.generos.some(g => {
+                    const gL = g.toLowerCase().trim();
+                    const cL = genero.toLowerCase().trim();
+                    return gL === cL || gL.includes(cL) || cL.includes(gL);
+                });
+                if (!selec) return;
+                chip.classList.add("seleccionado");
+                chip.style.background  = color + "20";
+                chip.style.borderColor = color;
+                chip.style.color       = color;
+                chip.style.fontWeight  = "600";
+                chip.style.boxShadow   = `0 0 0 1px ${color}40`;
+                chip.setAttribute("data-seleccionado", "true");
+            });
+        }, 350);
+    }
+
+    // Plataformas — para form-modal (fmm)
+    if (formId === "fmm" && data.plataformas?.length) {
+        setTimeout(() => {
+            const cfg = CONFIG[tipo];
+            if (!cfg?.usaPlataforma) return;
+            data.plataformas.forEach(p => {
+                if (!p || p === "Otro") return;
+                const chips = document.getElementById("plat-chips-fmm");
+                if (!chips) return;
+                // Evitar duplicados
+                if (chips.querySelector(`[data-plat="${CSS.escape(p)}"]`)) return;
+                chips.insertAdjacentHTML("beforeend", fmmRenderChip(p));
+            });
+        }, 80);
+    }
+
+    // Plataformas — para cat-form inline
+    if (formId === "inline" && data.plataformas?.length) {
+        setTimeout(() => {
+            const platInput = form.querySelector('[name="plataforma"]');
+            if (platInput) platInput.value = data.plataformas[0] || "";
+        }, 60);
     }
 }
 
 /** Rellena temporadas (series/animes) */
 function _fillTemporadas(temporadas, prefix) {
     if (!temporadas?.length) return;
-    // Esperar a que el DOM esté listo y luego agregar filas
+    // form-modal usa el sufijo "new", cat-form inline usa "inline"
     const suffix = prefix === "fmm" ? "new" : prefix;
     const cont = document.getElementById(`temporadas-container-${suffix}`);
     if (!cont) return;
     cont.innerHTML = "";
-    if (typeof temporadaContador !== "undefined") window.temporadaContador = 0;
+    temporadaContador = 0;
 
     temporadas.forEach(t => {
         if (typeof agregarFilaTemporada === "function") {
             agregarFilaTemporada(suffix);
-            const idx = (window.temporadaContador || 1) - 1;
-            // Rellenar campos de la fila
-            const tipoSel = document.getElementById(`temporada-tipo-${idx}-${suffix}`);
-            const nomInput = document.getElementById(`temporada-nombre-${idx}-${suffix}`);
-            const epInput  = document.getElementById(`temporada-eps-${idx}-${suffix}`);
-            if (tipoSel)  tipoSel.value  = t.tipo  || "Temporada";
-            if (nomInput) nomInput.value = t.nombre || "";
-            if (epInput)  epInput.value  = t.episodios || "";
+            const idx = temporadaContador - 1;
+            // Los IDs que genera agregarFilaTemporada son: temp-tipo-{idx} y temp-caps-{idx}
+            const tipoSel  = document.getElementById(`temp-tipo-${idx}`);
+            const capsInput = document.getElementById(`temp-caps-${idx}`);
+            if (tipoSel) {
+                // Mapear el tipo del adaptador al valor del select
+                const tipoMap = {
+                    "Temporada": "normal",
+                    "normal":    "normal",
+                    "ova":       "ova",
+                    "OVA":       "ova",
+                    "especial":  "especial",
+                    "Especial":  "especial",
+                    "pelicula":  "pelicula",
+                    "Película":  "pelicula",
+                    "ona":       "ona",
+                    "ONA":       "ona"
+                };
+                tipoSel.value = tipoMap[t.tipo] || "normal";
+            }
+            if (capsInput) capsInput.value = t.episodios || t.capitulos || "";
         }
     });
 }
@@ -824,19 +902,29 @@ function _fillTomos(tomos, prefix) {
     const cont = document.getElementById(`tomos-container-${suffix}`);
     if (!cont) return;
     cont.innerHTML = "";
-    if (typeof tomoContador !== "undefined") window.tomoContador = 0;
+    tomoContador = 0;
 
+    // Convertir formato Jikan (capituloInicio/capituloFin) o formato simple (nombre/capitulos)
     // Solo añadir hasta 20 tomos para no colapsar el form
     const limit = Math.min(tomos.length, 20);
     for (let i = 0; i < limit; i++) {
         const t = tomos[i];
         if (typeof agregarFilaTomo === "function") {
             agregarFilaTomo(suffix);
-            const idx = (window.tomoContador || 1) - 1;
-            const nomInput = document.getElementById(`tomo-nombre-${idx}-${suffix}`);
-            const capInput = document.getElementById(`tomo-capitulos-${idx}-${suffix}`);
-            if (nomInput) nomInput.value = t.nombre || `Vol. ${i+1}`;
-            if (capInput && t.capitulos) capInput.value = t.capitulos;
+            const idx = tomoContador - 1;
+            // Los IDs que genera agregarFilaTomo son: tomo-inicio-{idx} y tomo-fin-{idx}
+            const inicioInput = document.getElementById(`tomo-inicio-${idx}`);
+            const finInput    = document.getElementById(`tomo-fin-${idx}`);
+
+            if (t.capituloInicio != null && inicioInput) inicioInput.value = t.capituloInicio;
+            if (t.capituloFin    != null && finInput)    finInput.value    = t.capituloFin;
+
+            // Si viene del adaptador Jikan (solo tiene nombre y capitulos por tomo)
+            if (t.capitulos && inicioInput && finInput && t.capituloInicio == null) {
+                const inicio = i === 0 ? 1 : (i * t.capitulos + 1);
+                inicioInput.value = inicio;
+                finInput.value    = inicio + t.capitulos - 1;
+            }
         }
     }
 }
@@ -891,10 +979,6 @@ function apiSearchInyectarEnFormModal(tipo) {
         if (data.tomos) {
             setTimeout(() => _fillTomos(data.tomos, formId), 50);
         }
-        // Plataformas (juegos/animes/series/peliculas)
-        if (data.plataformas?.length) {
-            setTimeout(() => _fillPlataformas(data.plataformas, formId), 80);
-        }
 
         _mostrarToast(`✓ Datos de "${data.titulo}" cargados automáticamente`, CONFIG[tipo]?.color);
     });
@@ -921,9 +1005,6 @@ function apiSearchInyectarEnCatForm(tipo) {
         }
         if (data.tomos) {
             setTimeout(() => _fillTomos(data.tomos, formId), 50);
-        }
-        if (data.plataformas?.length) {
-            setTimeout(() => _fillPlataformas(data.plataformas, formId), 80);
         }
 
         _mostrarToast(`✓ Datos de "${data.titulo}" cargados automáticamente`, CONFIG[tipo]?.color);
