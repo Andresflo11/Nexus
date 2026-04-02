@@ -487,9 +487,15 @@ if (idx !== -1) dataOriginal[idx].progresoManga = item.progresoManga;
 if (meItemActual?.id === item.id) meItemActual = dataOriginal[idx];
 actualizarItemSilencioso({ id: item.id, progresoManga: item.progresoManga });
 parchearProgresoManga(item.id);
-// Actualizar imagen de la card según tomo actual
+// Actualizar imagen de la card y modal según tomo actual
 const _tomoIdxCard = item.tomos?.indexOf(tomoActual) ?? 0;
-_actualizarImagenCard(item.id, _tomoIdxCard >= 0 ? _tomoIdxCard : 0);
+const _tomoIdxFinal = _tomoIdxCard >= 0 ? _tomoIdxCard : 0;
+_actualizarImagenCard(item.id, _tomoIdxFinal);
+// Si el modal está abierto, actualizar imagen también
+if (meItemActual?.id === item.id) {
+    const imagenModal = _getImagenParaSeccion(meItemActual, _tomoIdxFinal);
+    if (imagenModal) _actualizarPosterModal(imagenModal);
+}
 // Actualizar tabs y dots si el modal está abierto
 if (meItemActual?.id === item.id && document.getElementById("me-tabs-manga")) {
     const tomos      = item.tomos ?? [];
@@ -822,6 +828,9 @@ if (meItemActual?.id === id) {
     meActualizarEpisodios(CONFIG[tipo]?.color ?? "#888");
     meTabActual = temporada - 1;
     meRenderTabs(CONFIG[tipo]?.color ?? "#888");
+    // Actualizar imagen del modal también
+    const imagenModal = _getImagenParaSeccion(meItemActual, temporada - 1);
+    if (imagenModal) _actualizarPosterModal(imagenModal);
 }
 }
 
@@ -836,7 +845,14 @@ function cambiarCapitulo(id, delta) {
     // Para cómics con tomos, actualizar imagen según tomo actual
     if (item.tomos?.length) {
         const tomoIdx = item.tomos.findIndex(t => nuevo >= t.capituloInicio && nuevo <= t.capituloFin);
-        if (tomoIdx >= 0) _actualizarImagenCard(id, tomoIdx);
+        if (tomoIdx >= 0) {
+            _actualizarImagenCard(id, tomoIdx);
+            // Si el modal está abierto, actualizar imagen también
+            if (meItemActual?.id === id) {
+                const imagenModal = _getImagenParaSeccion(meItemActual, tomoIdx);
+                if (imagenModal) _actualizarPosterModal(imagenModal);
+            }
+        }
     }
 }
 
