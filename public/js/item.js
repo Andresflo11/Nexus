@@ -389,11 +389,13 @@ function buildEpisodiosInner(color, idx) {
 }
 
 function cambiarTabTemp(idx) {
-  tabActual = idx;
-  const sec = document.getElementById("sec-episodios");
-  if (!sec) return;
-  sec.innerHTML = buildEpisodiosInner(cfg.color??"#888", idx);
-  sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
+    tabActual = idx;
+    const sec = document.getElementById("sec-episodios");
+    if (!sec) return;
+    sec.innerHTML = buildEpisodiosInner(cfg.color??"#888", idx);
+    sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
+    // Cambiar póster según temporada
+    _actualizarPosterItem(idx);
 }
 
 // ── Manga / Tomos ─────────────────────────────────────────
@@ -427,10 +429,12 @@ function buildMangaInner(color, idx) {
 }
 
 function cambiarTabTomo(idx) {
-  const sec = document.getElementById("sec-manga");
-  if (!sec) return;
-  sec.innerHTML = buildMangaInner(cfg.color??"#888", idx);
-  sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
+    const sec = document.getElementById("sec-manga");
+    if (!sec) return;
+    sec.innerHTML = buildMangaInner(cfg.color??"#888", idx);
+    sec.querySelectorAll(".item-ep-dot").forEach((el, i) => el.style.setProperty("--i", i));
+    // Cambiar póster según tomo
+    _actualizarPosterItem(idx);
 }
 
 // ── Capítulos ─────────────────────────────────────────────
@@ -543,6 +547,31 @@ async function agregarAlDashboard() {
       if (wrap) wrap.innerHTML = `<div style="padding:0.65rem 1rem;background:#22c55e0d;border:1px solid #22c55e35;border-radius:12px;color:#22c55e;font-size:0.8rem;display:flex;align-items:center;gap:0.5rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Ya en tu dashboard</div>`;
     }
   } catch { if (btn) btn.disabled = false; }
+}
+
+// ── Actualizar póster según sección (temporada/tomo) ──────
+function _actualizarPosterItem(idx) {
+    const imagenes = Array.isArray(item.imagenes) ? item.imagenes : [];
+    const imagen   = imagenes[idx] || item.imagen || null;
+    if (!imagen) return;
+
+    const posterEl = document.getElementById("item-poster");
+    const bgEl     = document.getElementById("item-bg");
+    const img      = posterEl?.querySelector("img");
+    if (img && img.src === imagen) return;
+
+    // Precargar antes del swap para evitar parpadeo
+    const preload = new Image();
+    preload.onload = () => {
+        if (img) {
+            img.src = imagen;
+        } else if (posterEl) {
+            posterEl.innerHTML = `<img src="${imagen}" alt="${item.titulo}">`;
+        }
+        if (bgEl) bgEl.style.backgroundImage = `url('${imagen}')`;
+    };
+    preload.onerror = () => {};
+    preload.src = imagen;
 }
 
 document.addEventListener("DOMContentLoaded", cargarItem);

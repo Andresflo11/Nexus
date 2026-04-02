@@ -166,8 +166,20 @@ function cardHTML(item, idx) {
     const cfg    = CONFIG[item.tipo] ?? {};
     const color  = cfg.color ?? "#888";
     const emoji  = tipoEmoji(item.tipo);
-    const poster = item.imagen
-        ? `<img src="${esc(item.imagen)}" alt="${esc(item.titulo)}" loading="lazy" onerror="this.style.display='none'">`
+      // Imagen según temporada/tomo actual
+    const _imgsDash = Array.isArray(item.imagenes) ? item.imagenes : [];
+    const _cfgDash  = CONFIG[item.tipo] ?? {};
+    let _secIdxDash = 0;
+    if (_cfgDash.usaEpisodios && item.progreso?.temporada) {
+        _secIdxDash = item.progreso.temporada - 1;
+    } else if (_cfgDash.usaTomos && item.tomos?.length && item.progresoManga?.capituloActual) {
+        const _cap = item.progresoManga.capituloActual;
+        const _ti  = item.tomos.findIndex(t => _cap >= t.capituloInicio && _cap <= t.capituloFin);
+        _secIdxDash = _ti >= 0 ? _ti : 0;
+    }
+    const _imgDash = _imgsDash[_secIdxDash] || item.imagen || null;
+    const poster = _imgDash
+        ? `<img src="${esc(_imgDash)}" alt="${esc(item.titulo)}" loading="lazy" onerror="this.style.display='none'">`
         : `<span class="card-poster-placeholder">${emoji}</span>`;
     const delay    = `d${Math.min(idx + 1, 6)}`;
     const valColor = valoracionColor(item.valoracion);

@@ -82,6 +82,7 @@ async function initDB() {
         `ALTER TABLE items ADD COLUMN duracion         TEXT`,
         `ALTER TABLE items ADD COLUMN links            TEXT`,
         `ALTER TABLE items ADD COLUMN titulos_alt      TEXT`,
+        `ALTER TABLE items ADD COLUMN imagenes         TEXT`,
     ]) { try { await dbRun(sql); } catch (_) {} }
 
     await dbRun(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -161,6 +162,7 @@ function parsearFila(row) {
         links:         parseJSON(row.links),
         plataforma:    parseJSON(row.plataforma),
         titulos_alt:   parseJSON(row.titulos_alt),
+        imagenes:      parseJSON(row.imagenes),
     };
 }
 
@@ -223,7 +225,7 @@ app.get('/items/:tipo', async (req, res) => {
 app.post('/items', async (req, res) => {
     try {
         const {
-            tipo, titulo, estado, fecha, imagen, plataforma,
+            tipo, titulo, estado, fecha, imagen, imagenes, plataforma,
             logros, temporadas, progreso, estadoSerie,
             capitulosTotales, capituloActual,
             paginasTotales,   paginaActual,
@@ -233,15 +235,16 @@ app.post('/items', async (req, res) => {
         } = req.body;
 
         const sql = `INSERT INTO items
-            (tipo, titulo, estado, fecha, imagen, plataforma, logros, temporadas, progreso,
+            (tipo, titulo, estado, fecha, imagen, imagenes, plataforma, logros, temporadas, progreso,
              estadoSerie, capitulosTotales, capituloActual, paginasTotales, paginaActual,
              valoracion, dlcs, tomos, progresoManga,
              saga, ordenPublicacion, ordenCronologico, generos, creador, anio, duracion, links, titulos_alt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const result = await dbRun(sql, [
             tipo, titulo, estado, fecha,
             imagen     ?? null,
+            JSON.stringify(imagenes ?? null),
             plataforma ? JSON.stringify(plataforma) : null,
             logros     ?? null,
             JSON.stringify(temporadas    ?? null),
@@ -285,6 +288,7 @@ app.put('/items/:id', async (req, res) => {
         if (item.links         !== undefined) item.links         = JSON.stringify(item.links);
         if (item.plataforma    !== undefined) item.plataforma    = JSON.stringify(item.plataforma);
         if (item.titulos_alt   !== undefined) item.titulos_alt   = JSON.stringify(item.titulos_alt);
+        if (item.imagenes      !== undefined) item.imagenes      = JSON.stringify(item.imagenes);
         delete item.id;
 
         const columnas = Object.keys(item);

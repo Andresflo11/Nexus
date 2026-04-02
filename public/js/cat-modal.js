@@ -23,6 +23,71 @@ let meTabRenderizado    = -1;     // índice del tab que está en el DOM
 let meInnerHTMLOriginal = "";     // HTML original del modal (antes de entrar en edición)
 let meDatosUsuario = null;  // { fecha_agregado, dlcs_usuario } del dashboard
 
+// ── Helper: obtener imagen según temporada/tomo actual ────
+function _getImagenParaSeccion(item, idx) {
+    const imagenes = Array.isArray(item.imagenes) ? item.imagenes : [];
+    // Si hay imagen para ese índice y no está vacía, usarla
+    if (imagenes[idx]) return imagenes[idx];
+    // Fallback a la imagen principal
+    return item.imagen || null;
+}
+
+function _actualizarPosterModal(imagen) {
+    const poster = document.getElementById("me-poster");
+    const bg     = document.getElementById("me-bg");
+    if (!poster || !imagen) return;
+    const img = poster.querySelector("img");
+    if (img && img.src === imagen) return;
+
+    // Precargar antes de hacer el swap
+    const preload = new Image();
+    preload.onload = () => {
+        if (img) {
+            img.src = imagen;
+        } else {
+            poster.innerHTML = `<img src="${imagen}" alt="">`;
+        }
+        if (bg) bg.style.backgroundImage = `url('${imagen}')`;
+    };
+    preload.onerror = () => {};
+    preload.src = imagen;
+}
+
+// ── Actualizar imagen de la card del grid (sin parpadeo) ──
+function _actualizarImagenCard(itemId, idx) {
+    const item = dataOriginal.find(i => i.id === itemId);
+    const card = document.getElementById(`card-${itemId}`);
+    if (!item || !card) return;
+    const imagen = _getImagenParaSeccion(item, idx);
+    if (!imagen) return;
+    const posterEl = card.querySelector(".card-poster");
+    if (!posterEl) return;
+    const imgActual = posterEl.querySelector("img");
+
+    // Si es la misma imagen, no hacer nada
+    if (imgActual && imgActual.src === imagen) return;
+
+    // Precargar la nueva imagen antes de mostrarla
+    const preload = new Image();
+    preload.onload = () => {
+        if (imgActual) {
+            // Swap directo sin animación — ya está precargada, no hay flash
+            imgActual.src = imagen;
+        } else {
+            const ph = posterEl.querySelector(".card-poster-placeholder");
+            if (ph) ph.remove();
+            const ni = document.createElement("img");
+            ni.src     = imagen;
+            ni.alt     = item.titulo;
+            ni.loading = "lazy";
+            ni.onerror = function() { this.style.display = "none"; };
+            posterEl.prepend(ni);
+        }
+    };
+    preload.onerror = () => {}; // si falla, mantener imagen actual
+    preload.src = imagen;
+}
+
 // ── Abrir modal expandido ─────────────────────────────────
 // Se llama al hacer click en el póster de una card.
 function abrirModalExpandido(id) {
@@ -46,19 +111,37 @@ function abrirModalExpandido(id) {
     const color = config.color ?? "#888";
     const modal = document.getElementById("modal-expandido");
 
-    // Fondo blur con la imagen del póster
+     // Fondo blur con la imagen del póster (de la temporada/tomo actual)
     const bg = document.getElementById("me-bg");
-    if (item.imagen) {
-        bg.style.backgroundImage = `url('${esc(item.imagen)}')`;
+    const _tabIni  = item.progreso?.temporada ? item.progreso.temporada - 1 : 0;
+    const _tomoIni = (() => {
+        if (!config.usaTomos || !item.tomos?.length) return 0;
+        const cap = item.progresoManga?.capituloActual ?? 0;
+        const idx = item.tomos.findIndex(t => cap >= t.capituloInicio && cap <= t.capituloFin);
+        return idx >= 0 ? idx : 0;
+    })();
+    const _secIdx   = config.usaEpisodios ? _tabIni : config.usaTomos ? _tomoIni : 0;
+    const _imgInicial = _getImagenParaSeccion(item, _secIdx);
+    if (_imgInicial) {
+        bg.style.backgroundImage = `url('${esc(_imgInicial)}')`;
         bg.style.opacity = "1";
     } else {
         bg.style.backgroundImage = "none";
         bg.style.opacity = "0";
     }
 
-    // Póster
+    // Póster — usar imagen de la temporada/tomo actual si existe
     const poster = document.getElementById("me-poster");
-    poster.innerHTML    = item.imagen ? `<img src="${esc(item.imagen)}" alt="">` : `<span>${tipoEmoji(tipo)}</span>`;
+    const tabInicial = item.progreso?.temporada ? item.progreso.temporada - 1 : 0;
+    const tomoInicial = (() => {
+        if (!config.usaTomos || !item.tomos?.length) return 0;
+        const cap = item.progresoManga?.capituloActual ?? 0;
+        const idx = item.tomos.findIndex(t => cap >= t.capituloInicio && cap <= t.capituloFin);
+        return idx >= 0 ? idx : 0;
+    })();
+    const seccionIdx  = config.usaEpisodios ? tabInicial : config.usaTomos ? tomoInicial : 0;
+    const imagenInicial = _getImagenParaSeccion(item, seccionIdx);
+    poster.innerHTML    = imagenInicial ? `<img src="${esc(imagenInicial)}" alt="">` : `<span>${tipoEmoji(tipo)}</span>`;
     poster.style.borderColor = color;
 
     // Título
@@ -398,12 +481,15 @@ const _capLabel   = _cfg.capituloLabel ?? "Cap.";
 if (textoModal) textoModal.textContent = `${_capLabel} ${capActual}`;
 if (barraModal) barraModal.style.width = `${pctGlobal}%`;
 if (infoModal)  infoModal.textContent  = `${_tomoNombre} ${tomoActual?.numero ?? "?"} — ${pctGlobal}%`;
-    // Guardar silenciosamente
+     // Guardar silenciosamente
     const idx = dataOriginal.findIndex(i => i.id === item.id);
 if (idx !== -1) dataOriginal[idx].progresoManga = item.progresoManga;
 if (meItemActual?.id === item.id) meItemActual = dataOriginal[idx];
 actualizarItemSilencioso({ id: item.id, progresoManga: item.progresoManga });
 parchearProgresoManga(item.id);
+// Actualizar imagen de la card según tomo actual
+const _tomoIdxCard = item.tomos?.indexOf(tomoActual) ?? 0;
+_actualizarImagenCard(item.id, _tomoIdxCard >= 0 ? _tomoIdxCard : 0);
 // Actualizar tabs y dots si el modal está abierto
 if (meItemActual?.id === item.id && document.getElementById("me-tabs-manga")) {
     const tomos      = item.tomos ?? [];
@@ -656,6 +742,11 @@ function meRenderTabContenido(color = config.color) {
 function meCambiarTab(i) {
     meTabActual = i;
     meRenderTabs();
+    // Cambiar imagen según la temporada seleccionada
+    if (meItemActual) {
+        const imagen = _getImagenParaSeccion(meItemActual, i);
+        if (imagen) _actualizarPosterModal(imagen);
+    }
 }
 
 // ── Actualizar barras de capítulos y páginas ──────────────
@@ -722,6 +813,8 @@ const idx = dataOriginal.findIndex(i => i.id === id);
 if (idx !== -1) dataOriginal[idx].progreso = item.progreso;
 // Luego parchar el DOM
 parchearProgresoEpisodio(id);
+// Actualizar imagen de la card según temporada actual
+_actualizarImagenCard(id, temporada - 1);
 
 // Si el modal está abierto con este item, actualizar UI
 if (meItemActual?.id === id) {
@@ -740,6 +833,11 @@ function cambiarCapitulo(id, delta) {
     item.capituloActual = nuevo;
     actualizarItemSilencioso(item);
     parchearProgresoCapitulo(id);
+    // Para cómics con tomos, actualizar imagen según tomo actual
+    if (item.tomos?.length) {
+        const tomoIdx = item.tomos.findIndex(t => nuevo >= t.capituloInicio && nuevo <= t.capituloFin);
+        if (tomoIdx >= 0) _actualizarImagenCard(id, tomoIdx);
+    }
 }
 
 function cambiarPagina(id, delta) {
@@ -834,6 +932,11 @@ function meCambiarTabManga(idx) {
         btn.style.color        = activo ? "#000" : "";
     });
     meRenderTabManga(idx);
+    // Cambiar imagen según el tomo seleccionado
+    if (meItemActual) {
+        const imagen = _getImagenParaSeccion(meItemActual, idx);
+        if (imagen) _actualizarPosterModal(imagen);
+    }
 }
 
 // Renderizar dots de capítulos de un tomo

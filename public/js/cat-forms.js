@@ -421,6 +421,8 @@ function activarEdicionEnModal(id) {
         </button>
     </div>`;
 
+    const imagenesEditHTML = construirSeccionImagenes(item, 'edit');
+
     document.getElementById("me-form-contenido").innerHTML = `
         <input type="text" id="input-titulo-${id}" value="${esc(item.titulo)}" placeholder="Título">
         <select id="input-estado-${id}">${estadoOpts}</select>
@@ -436,6 +438,7 @@ function activarEdicionEnModal(id) {
         <input type="number" id="input-orden-cron-${id}" value="${item.ordenCronologico ?? ""}" placeholder="Nº orden cronológico" min="1">
         ${titulosAltEditHTML}
         ${linksEditHTML}
+        ${imagenesEditHTML}
         ${extra}
         <div style="display:flex;gap:0.75rem;margin-top:0.5rem;grid-column:1/-1">
             <button onclick="guardarEdicionCompleta(${id});meVolverDesdeEdicion(${id})"
@@ -473,7 +476,8 @@ function guardarEdicionCompleta(id) {
         ordenPublicacion: parseInt(document.getElementById(`input-orden-pub-${id}`)?.value) || null,
         ordenCronologico: parseInt(document.getElementById(`input-orden-cron-${id}`)?.value) || null,
         links:       leerLinksDelForm('edit'),
-        titulos_alt: leerTitulosAlt('edit')
+        titulos_alt: leerTitulosAlt('edit'),
+        imagenes:    leerImagenesDelForm('edit')
     };
 
     if (config.usaPlataforma) {
@@ -615,16 +619,28 @@ if (metaEl) metaEl.innerHTML = `
         badge.remove();
     }
 
-    // Imagen del póster
+     // Imagen del póster — usar imagen de temporada/tomo actual si existe
     const posterEl = card.querySelector(".card-poster");
     if (posterEl) {
+        // Calcular índice de sección actual
+        let _secIdxCard = 0;
+        if (config.usaEpisodios && item.progreso?.temporada) {
+            _secIdxCard = item.progreso.temporada - 1;
+        } else if (config.usaTomos && item.tomos?.length && item.progresoManga?.capituloActual) {
+            const _cap = item.progresoManga.capituloActual;
+            const _ti  = item.tomos.findIndex(t => _cap >= t.capituloInicio && _cap <= t.capituloFin);
+            _secIdxCard = _ti >= 0 ? _ti : 0;
+        }
+        const _imgs    = Array.isArray(item.imagenes) ? item.imagenes : [];
+        const _imgCard = _imgs[_secIdxCard] || item.imagen || null;
+
         const img = posterEl.querySelector("img");
-        if (item.imagen) {
-            if (img) { img.src = item.imagen; }
+        if (_imgCard) {
+            if (img) { img.src = _imgCard; }
             else {
                 posterEl.querySelector(".card-poster-placeholder")?.remove();
                 const ni = document.createElement("img");
-                ni.src = item.imagen; ni.alt = item.titulo; ni.loading = "lazy";
+                ni.src = _imgCard; ni.alt = item.titulo; ni.loading = "lazy";
                 ni.onerror = function() { this.style.display = "none"; };
                 posterEl.prepend(ni);
             }
@@ -1317,4 +1333,94 @@ function leerTitulosAlt(modo) {
         .map(el => el.value.trim())
         .filter(Boolean);
     return titulos.length ? titulos : null;
+}
+
+// ── Imágenes múltiples por temporada/tomo ─────────────────
+
+let imagenContador = 0;
+
+function renderFilaImagen(i, datos = {}, label = "") {
+    return `<div id="imagen-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;grid-column:1/-1">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);white-space:nowrap;min-width:80px">${label || `Imagen ${i + 1}`}</span>
+        <input type="url" id="imagen-url-${i}" value="${esc(datos.url ?? "")}"
+            placeholder="URL imagen..."
+            style="flex:1;font-size:0.8rem">
+        <button type="button" onclick="document.getElementById('imagen-row-${i}').remove()"
+            style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>
+    </div>`;
+}
+
+function construirSeccionImagenes(item, modo) {
+    // Determinar qué tipo de "secciones" tiene: temporadas o tomos
+    const cfg = (typeof formModalTipoActual !== "undefined" && formModalTipoActual)
+        ? CONFIG[formModalTipoActual]
+        : (typeof config !== "undefined" ? config : {});
+
+    const tieneTemporadas = cfg.usaEpisodios && Array.isArray(item.temporadas) && item.temporadas.length;
+    const tieneTomos      = cfg.usaTomos     && Array.isArray(item.tomos)      && item.tomos.length;
+    const imagenes        = Array.isArray(item.imagenes) ? item.imagenes : [];
+    imagenContador        = 0;
+
+    const tomoLabel  = cfg.tomoLabel     ? "Vol." : "Tomo";
+    const tomoNombre = cfg.tomoLabel     ? "Volumen" : "Tomo";
+
+    let html = `<div style="grid-column:1/-1;margin-top:0.5rem">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">
+            Imágenes por ${tieneTemporadas ? "temporada" : tieneTomos ? tomoNombre.toLowerCase() : "sección"}
+            <span style="opacity:0.5;font-size:0.55rem;margin-left:0.5rem">(índice 0 = imagen principal)</span>
+        </div>
+        <div id="imagenes-container-${modo}" style="display:flex;flex-direction:column;gap:0.25rem">`;
+
+    if (tieneTemporadas) {
+        item.temporadas.forEach((t, i) => {
+            const label = t.tipo === "ova"      ? `OVA ${t.numero}`
+                        : t.tipo === "especial" ? `Especial ${t.numero}`
+                        : t.tipo === "pelicula" ? `Película ${t.numero}`
+                        : t.tipo === "ona"      ? `ONA ${t.numero}`
+                        : `Temporada ${t.numero}`;
+            const datos = imagenes[i] ? { url: imagenes[i] } : {};
+            html += renderFilaImagen(imagenContador++, datos, label);
+        });
+    } else if (tieneTomos) {
+        item.tomos.forEach((t, i) => {
+            const label = `${tomoNombre} ${t.numero}`;
+            const datos = imagenes[i] ? { url: imagenes[i] } : {};
+            html += renderFilaImagen(imagenContador++, datos, label);
+        });
+    } else {
+        // Sin secciones: solo mostrar filas libres
+        const existentes = imagenes.length ? imagenes : [""];
+        existentes.forEach((url, i) => {
+            html += renderFilaImagen(imagenContador++, { url }, `Imagen ${i + 1}`);
+        });
+        html += `<button type="button" onclick="agregarFilaImagen('${modo}')"
+            style="margin-top:0.4rem;padding:0.35rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir imagen
+        </button>`;
+    }
+
+    html += `</div></div>`;
+    return html;
+}
+
+function agregarFilaImagen(modo) {
+    const container = document.getElementById(`imagenes-container-${modo}`);
+    if (!container) return;
+    // Insertar antes del botón de añadir si existe
+    const btn = container.querySelector("button");
+    const fila = document.createElement("div");
+    fila.innerHTML = renderFilaImagen(imagenContador++, {}, `Imagen ${imagenContador}`);
+    if (btn) container.insertBefore(fila.firstElementChild, btn);
+    else container.insertAdjacentHTML("beforeend", renderFilaImagen(imagenContador - 1, {}, `Imagen ${imagenContador}`));
+}
+
+function leerImagenesDelForm(modo) {
+    const container = document.getElementById(`imagenes-container-${modo}`);
+    if (!container) return null;
+    const urls = [...container.querySelectorAll("[id^='imagen-url-']")]
+        .map(el => el.value.trim());
+    // Filtrar vacíos del final pero mantener huecos intermedios como null
+    while (urls.length && !urls[urls.length - 1]) urls.pop();
+    const resultado = urls.map(u => u || null);
+    return resultado.length ? resultado : null;
 }

@@ -170,6 +170,19 @@ function buildFormModalCampos(t) {
         </button>
     </div>`);
 
+    // Imágenes múltiples (se construye vacío al crear, se rellena si hay temporadas/tomos)
+    add(`<div style="grid-column:1/-1;margin-top:0.5rem">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">
+            Imágenes adicionales
+            <span style="opacity:0.5;font-size:0.55rem;margin-left:0.5rem">(una por temporada/tomo en orden)</span>
+        </div>
+        <div id="imagenes-container-new" style="display:flex;flex-direction:column;gap:0.25rem"></div>
+        <button type="button" onclick="agregarFilaImagenNew()"
+            style="margin-top:0.4rem;padding:0.35rem 0.9rem;border-radius:7px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;width:100%">
+            + Añadir imagen
+        </button>
+    </div>`);
+
     // ── Campos específicos por tipo ────────────────────────────
     if (cfg.usaEpisodios) {
         add(`<div style="grid-column:1/-1">
@@ -362,7 +375,8 @@ async function guardarFormModal(e, t) {
         ordenPublicacion: parseInt(form.ordenPublicacion?.value) || null,
         ordenCronologico: parseInt(form.ordenCronologico?.value) || null,
         links:       leerLinksFmm(),
-        titulos_alt: leerTitulosAlt('new')
+        titulos_alt: leerTitulosAlt('new'),
+        imagenes:    leerImagenesFmm()
     };
 
     if (cfg.usalogros)       nuevo.logros      = form.logros?.value ?? "No tiene logros";
@@ -421,3 +435,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Escape") cerrarFormModal();
     });
 });
+
+// ── Imágenes múltiples en form-modal ──────────────────────
+let fmmImagenContador = 0;
+
+function agregarFilaImagenNew() {
+    const container = document.getElementById("imagenes-container-new");
+    if (!container) return;
+    const i = fmmImagenContador++;
+    container.insertAdjacentHTML("beforeend", `
+        <div id="fmm-imagen-row-${i}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);white-space:nowrap;min-width:80px">Imagen ${i + 1}</span>
+            <input type="url" id="fmm-imagen-url-${i}" placeholder="URL imagen..."
+                style="flex:1;font-size:0.8rem">
+            <button type="button" onclick="document.getElementById('fmm-imagen-row-${i}').remove()"
+                style="color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;flex-shrink:0">✕</button>
+        </div>`);
+}
+
+function leerImagenesFmm() {
+    const container = document.getElementById("imagenes-container-new");
+    if (!container) return null;
+    const urls = [...container.querySelectorAll("[id^='fmm-imagen-url-']")]
+        .map(el => el.value.trim());
+    while (urls.length && !urls[urls.length - 1]) urls.pop();
+    const resultado = urls.map(u => u || null);
+    return resultado.length ? resultado : null;
+}
