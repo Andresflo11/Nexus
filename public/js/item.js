@@ -402,10 +402,9 @@ function cambiarTabTemp(idx) {
 
 function buildSeccionManga(color, tomoTabActual) {
   const tomos = item.tomos ?? [];
-  const capActual = item.progresoManga?.capituloActual ?? 0;
+  // En la página de detalle siempre empezar en el primer tomo
   if (tomoTabActual === undefined) {
-    tomoTabActual = tomos.findIndex(t => capActual >= t.capituloInicio && capActual <= t.capituloFin);
-    if (tomoTabActual === -1) tomoTabActual = 0;
+    tomoTabActual = 0;
   }
   const sec = document.createElement("div");
   sec.className = "item-section"; sec.id = "sec-manga";

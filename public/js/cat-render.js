@@ -18,8 +18,36 @@ let catPaginaActual  = 1;
 // ── Renderizar card del grid ──────────────────────────────
 function renderCard(item, idx) {
     const color   = config.color ?? "#888";
-    const poster  = item.imagen
-        ? `<img src="${esc(item.imagen)}" alt="${esc(item.titulo)}" loading="lazy" onerror="this.style.display='none'">`
+
+    // Imagen según temporada/tomo actual del progreso
+    const _imagenCard = (() => {
+        const imgs = Array.isArray(item.imagenes) ? item.imagenes : [];
+        if (!imgs.length) return item.imagen || null;
+        let idx = 0;
+        // Episodios (series/animes)
+        if (config.usaEpisodios) {
+            const prog = typeof item.progreso === "string"
+                ? (() => { try { return JSON.parse(item.progreso); } catch { return null; } })()
+                : item.progreso;
+            if (prog?.temporada) idx = prog.temporada - 1;
+        }
+        // Tomos (mangas/comics)
+        else if (config.usaTomos && Array.isArray(item.tomos) && item.tomos.length) {
+            const pm = typeof item.progresoManga === "string"
+                ? (() => { try { return JSON.parse(item.progresoManga); } catch { return null; } })()
+                : item.progresoManga;
+            const cap = pm?.capituloActual ?? 0;
+            if (cap > 0) {
+                const ti = item.tomos.findIndex(t => cap >= t.capituloInicio && cap <= t.capituloFin);
+                idx = ti >= 0 ? ti : 0;
+            }
+        }
+        idx = Math.max(0, Math.min(idx, imgs.length - 1));
+        return imgs[idx] || item.imagen || null;
+    })();
+
+    const poster  = _imagenCard
+        ? `<img src="${esc(_imagenCard)}" alt="${esc(item.titulo)}" loading="lazy" onerror="this.style.display='none'">`
         : `<span class="card-poster-placeholder">${tipoEmoji(tipo)}</span>`;
 
     const valColor = valoracionColor(item.valoracion);
@@ -327,9 +355,10 @@ contenedor.innerHTML = claves.map(año => `
 // ── Filtrar + ordenar + mostrar ───────────────────────────
 function aplicarOrden(resetPagina = false) {
     if (resetPagina) catPaginaActual = 1;
-    let lista = filtroEstado
-        ? dataOriginal.filter(i => i.estado === filtroEstado)
-        : [...dataOriginal];
+    let lista = [...dataOriginal];
+    if (filtroEstado)      lista = lista.filter(i => i.estado === filtroEstado);
+    if (filtroEstadoSerie) lista = lista.filter(i => i.estadoSerie === filtroEstadoSerie);
+    if (filtroValoracion !== null)  lista = lista.filter(i => i.valoracion === filtroValoracion);
 
     const sort = document.getElementById("sort-select")?.value ?? "reciente";
     if (sort === "reciente") {
@@ -366,27 +395,108 @@ function crearFiltros() {
     const filtrosDiv = document.getElementById("filtros");
     filtrosDiv.innerHTML = "";
 
-    const crearBtn = (texto, activo, onClick) => {
+    // ── Helper para crear botón de filtro ─────────────────
+    const crearBtn = (texto, activo, onClick, color) => {
         const btn = document.createElement("button");
+        const c   = color || config.color;
         btn.className = "platform-btn" + (activo ? " active" : "");
-        btn.innerHTML = `<span class="platform-dot" style="background:${config.color}${activo ? "" : "60"}"></span>${texto}`;
-        btn.onclick = () => {
-            filtrosDiv.querySelectorAll(".platform-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            onClick();
-        };
+        btn.innerHTML = `<span class="platform-dot" style="background:${c}${activo ? "" : "60"}"></span>${texto}`;
+        btn.onclick = onClick;
         filtrosDiv.appendChild(btn);
+        return btn;
     };
 
-    crearBtn("Todos", !filtroEstado, () => { filtroEstado = null; aplicarOrden(true); });
+    // ── Sección: Estado del usuario ───────────────────────
+    const labelEstado = document.createElement("div");
+    labelEstado.className = "section-label";
+    labelEstado.style.marginTop = "0";
+    labelEstado.textContent = "Estado";
+    filtrosDiv.appendChild(labelEstado);
+
+    const btnTodos = crearBtn("Todos", !filtroEstado, () => {
+        filtroEstado = null;
+        filtrosDiv.querySelectorAll(".platform-btn[data-grupo='estado']").forEach(b => b.classList.remove("active"));
+        btnTodos.classList.add("active");
+        aplicarOrden(true);
+    });
+    btnTodos.setAttribute("data-grupo", "estado");
 
     config.estados.forEach(estado => {
         const cnt = dataOriginal.filter(i => i.estado === estado).length;
-        crearBtn(`${estado} (${cnt})`, false, () => {
+        if (!cnt) return;
+        const btn = crearBtn(`${estado} (${cnt})`, false, () => {
             filtroEstado = estado;
+            filtrosDiv.querySelectorAll(".platform-btn[data-grupo='estado']").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
             aplicarOrden(true);
         });
+        btn.setAttribute("data-grupo", "estado");
     });
+
+    // ── Sección: Estado de la serie (solo si aplica) ──────
+    if (config.usaEstadoSerie) {
+        const estadosSerie = [...new Set(
+            dataOriginal.map(i => i.estadoSerie).filter(Boolean)
+        )].sort();
+
+        if (estadosSerie.length) {
+            const labelSerie = document.createElement("div");
+            labelSerie.className = "section-label";
+            labelSerie.textContent = "Estado de la obra";
+            filtrosDiv.appendChild(labelSerie);
+
+            const btnTodosSerie = crearBtn("Todas", !filtroEstadoSerie, () => {
+                filtroEstadoSerie = null;
+                filtrosDiv.querySelectorAll(".platform-btn[data-grupo='serie']").forEach(b => b.classList.remove("active"));
+                btnTodosSerie.classList.add("active");
+                aplicarOrden(true);
+            }, "#94a3b8");
+            btnTodosSerie.setAttribute("data-grupo", "serie");
+
+            estadosSerie.forEach(estado => {
+                const cnt = dataOriginal.filter(i => i.estadoSerie === estado).length;
+                const btn = crearBtn(`${estado} (${cnt})`, false, () => {
+                    filtroEstadoSerie = estado;
+                    filtrosDiv.querySelectorAll(".platform-btn[data-grupo='serie']").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    aplicarOrden(true);
+                }, "#94a3b8");
+                btn.setAttribute("data-grupo", "serie");
+            });
+        }
+    }
+
+    // ── Sección: Valoración ───────────────────────────────
+    const hayValorados = dataOriginal.some(i => i.valoracion > 0);
+    if (hayValorados) {
+        const labelVal = document.createElement("div");
+        labelVal.className = "section-label";
+        labelVal.textContent = "Valoración";
+        filtrosDiv.appendChild(labelVal);
+
+        const btnTodasVal = crearBtn("Todas", filtroValoracion === null, () => {
+            filtroValoracion = null;
+            filtrosDiv.querySelectorAll(".platform-btn[data-grupo='val']").forEach(b => b.classList.remove("active"));
+            btnTodasVal.classList.add("active");
+            aplicarOrden(true);
+        }, "#6b7280");
+        btnTodasVal.setAttribute("data-grupo", "val");
+
+        // Mostrar solo valoraciones que existen en los datos
+        const labels = { 5: "Me Encanta", 4: "Me gustó", 3: "Indiferente", 2: "No me gustó", 1: "Pésimo", 0: "Sin valorar" };
+        const colors = { 5: "#00c853", 4: "#64dd17", 3: "#ffd600", 2: "#ff6d00", 1: "#d50000", 0: "#6b7280" };
+        [5, 4, 3, 2, 1, 0].forEach(v => {
+            const cnt = dataOriginal.filter(i => i.valoracion === v).length;
+            if (!cnt) return;
+            const btn = crearBtn(`${labels[v]} (${cnt})`, false, () => {
+                filtroValoracion = v;
+                filtrosDiv.querySelectorAll(".platform-btn[data-grupo='val']").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                aplicarOrden(true);
+            }, colors[v]);
+            btn.setAttribute("data-grupo", "val");
+        });
+    }
 }
 
 // ── Helper: extraer año de una fecha "YYYY-MM-DD" ─────────

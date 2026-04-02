@@ -18,7 +18,9 @@ if (!tipo || !config) {
 
 let dataOriginal = [];
 let todosLosItemsGlobal = [];
-let filtroEstado = null;
+let filtroEstado      = null;
+let filtroEstadoSerie = null;
+let filtroValoracion  = null;
 let vistaActual  = "grid";
 let idAEliminar  = null;
 
@@ -85,6 +87,9 @@ async function cargarItems() {
                     // Reemplazar datos del admin con los del usuario (null si no tiene)
                     logros:         du?.logros_usuario  ?? null,
                     dlcs:           item.dlcs,          // DLCs de estructura los mantiene el admin
+                    // imagenes siempre viene del item original (ya está en ...item)
+                    // pero la forzamos para asegurar que no se pierda
+                    imagenes:       item.imagenes       ?? null,
                 };
             });
         }
